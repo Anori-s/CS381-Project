@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Lost Item - YIC Lost & Found</title>
+    <link rel="stylesheet" href="../Style/style.css">
+</head>
+<body>
+
+<header class="top-bar">
+    <div class="logo-area">
+        <img src="YIC_Logo.png" alt="YIC Logo">
+        <div>
+            <h1>YIC Lost &amp; Found</h1>
+            <p>Yanbu Industrial Collage</p>
+        </div>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="report_Lost.html" class="active">Report Lost</a></li>
+            <li><a href="report_found.html">Post Found</a></li>
+            <li><a href="Dashboard.html">My Account</a></li>
+        </ul>
+    </nav>
+    <div class="top-bar-right" id="header-right"></div>
+</header>
+
+<p class="page-trail"><a href="index.html">Home</a> › Report Lost Item</p>
+
+<div class="form-box">
+    <h2>📋 Report a Lost Item</h2>
+    <p class="form-note">Fill in the details below. Your report will appeer on the home page so others can help find it.</p>
+
+    <form id="lostForm" novalidate>
+
+        <div class="two-columns">
+            <div class="input-group">
+                <label for="itemTitle">Item Name <span class="required-star">*</span></label>
+                <input type="text" id="itemTitle" placeholder="e.g. IPhone 16" required minlength="3">
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label for="category">Category <span class="required-star">*</span></label>
+                <select id="category" required>
+                    <option value="">-- Select --</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="bags">Bags and Luggage</option>
+                    <option value="clothing">Clothing</option>
+                    <option value="keys">Keys</option>
+                    <option value="accessories">Accessories</option>
+                    <option value="books">Books and Stationery</option>
+                    <option value="other">Other</option>
+                </select>
+                <div class="input-error"></div>
+            </div>
+        </div>
+
+        <div class="two-columns">
+            <div class="input-group">
+                <label for="location">Last Seen Location <span class="required-star">*</span></label>
+                <input type="text" id="location" placeholder="e.g. Lab B0-15" required minlength="3">
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label for="dateLost">Date Lost <span class="required-star">*</span></label>
+                <input type="date" id="dateLost" required>
+                <div class="input-error"></div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="description">Description <span class="required-star">*</span></label>
+            <textarea id="description" placeholder="Describe the item: colour, brand, size, any special markings..." required minlength="20"></textarea>
+            <div class="input-error"></div>
+            <span id="charCount" style="font-size:12px;color:#6b8ab0;margin-top:3px;display:block">0 / 20 min characters</span>
+        </div>
+
+        <div class="input-group">
+            <label for="contactEmail">Contact Email <span class="required-star">*</span></label>
+            <input type="email" id="contactEmail" placeholder="your@rcjy.edu.sa" required>
+            <div class="input-error"></div>
+        </div>
+
+        <div class="input-group">
+            <label for="reward">Reward Offer (optional)</label>
+            <input type="text" id="reward" placeholder="e.g. 50 SAR reward for safe return">
+        </div>
+
+        <div class="line-divider"></div>
+
+        <!-- Photo upload -->
+        <div class="input-group">
+            <label>Photo (optional/ recommended)</label>
+            <div class="photo-upload" id="upload-zone">
+                <div class="cam-icon">📷</div>
+                <p>Click or drag a photo here</p>
+                <p>JPG, PNG — max 5 MB</p>
+                <input type="file" id="photo-input" accept="image/*">
+            </div>
+            <div class="photo-preview" id="img-preview">
+                <img src="" alt="Preview">
+                <button type="button" class="remove-photo">✕</button>
+            </div>
+        </div>
+
+        <div class="line-divider"></div>
+
+        <div class="info-box info-box-blue">
+            🔒 Your contact details are <strong>not shown publicely</strong>. Only you and the admin can see them.
+        </div> <!--safty and security assurance for user-->
+
+        <div class="form-bottom-btns">
+            <a href="index.html" class="btn btn-white">Cancel</a>
+            <button type="submit" class="btn btn-blue">Submit Report →</button>
+        </div>
+
+    </form>
+</div>
+
+<!--Success popup -->
+<div class="popup-overlay" id="success-modal">
+    <div class="popup-box" style="text-align:center">
+        <div style="font-size:52px;margin-bottom:14px">✅</div>
+        <h3>Report Submited!</h3>
+        <p>Your lost item has been posted!</p>
+        <br>
+        <div class="form-bottom-btns" style="justify-content:center">
+            <a href="index.html" class="btn btn-white">Back to Browse</a>
+            <a href="Dashboard.html" class="btn btn-blue">View My Items</a>
+        </div>
+    </div>
+</div>
+
+<footer><p>&copy; 2026 YIC Lost &amp; Found Portal | CS381 Project</p></footer>
+<div class="notifications-area" id="toast-area"></div>
+<script src="../JS/main.js"></script>
+<script>
+    // dont allow future dates
+    document.getElementById('dateLost').max = new Date().toISOString().split('T')[0];
+
+    //character counter for description
+    var descBox = document.getElementById('description');
+    var charCount = document.getElementById('charCount'); 
+    descBox.addEventListener('input', function() {
+        var len = descBox.value.length;
+        charCount.textContent = len + ' / 20 min characters';
+        charCount.style.color = len >= 20 ? '#16a34a': '#6b8ab0';
+    });
+
+    //prefill email 
+    document.addEventListener('DOMContentLoaded', function() {
+        var user = getUser();
+        if (user) document.getElementById('contactEmail').value = user.email;
+    });
+
+    document.getElementById('lostForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!validateForm(this)) { toast('Please fix the errors above.', 'err'); return; }
+        //save the form data
+        var user = getUser();
+        var items = getLS('lostItems');
+        var imgEl = document.querySelector('#img-preview img');
+        var imgData = (imgEl && imgEl.src && imgEl.src !== window.location.href) ? imgEl.src : '';
+        var rawDate = document.getElementById('dateLost').value;
+        var fmtDate = new Date(rawDate).toLocaleDateString('en-SA', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        var newItem = {
+            id: nextId(items),
+            title:document.getElementById('itemTitle').value.trim(),
+            category: document.getElementById('category').value,
+            location: document.getElementById('location').value.trim(),
+            date: fmtDate, //format the date
+            description: document.getElementById('description').value.trim(),
+            icon: categoryIcon(document.getElementById('category').value),
+            image: imgData,
+            owner: user ? user.name : 'Guest', //if logged set name
+            ownerId: user ? user.id : null,
+            contact:document.getElementById('contactEmail').value.trim(),
+            reward:document.getElementById('reward').value.trim(),
+            status:'active'
+        };
+
+        items.push(newItem); //push item
+        setLS('lostItems', items);
+        openModal('success-modal');
+    });
+</script>
+</body>
+</html>

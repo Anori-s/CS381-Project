@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YIC Lost & Found</title>
+    <link rel="stylesheet" href="../Style/style.css">
+</head>
+<body>
+
+<!-- Top Bar -->
+<header class="top-bar">
+    <div class="logo-area">
+        <img src="YIC_Logo.png" alt="YIC Logo">
+        <div>
+            <h1>YIC Lost &amp; Found</h1>
+            <p>Yanbu Industrial Collage</p>
+        </div>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="report_Lost.html">Report Lost</a></li>
+            <li><a href="report_found.html">Post Found</a></li>
+            <li><a href="Dashboard.html">My Account</a></li>
+        </ul>
+    </nav>
+    <div class="top-bar-right" id="header-right"></div>
+</header>
+
+<!-- Welcome section -->
+<section class="hero-section">
+    <h2>Lost Something? Found Something?</h2>
+    <p>Report lost items or post found items at Yanbu Industrial College</p>
+    <div class="hero-buttons">
+        <a href="report_Lost.html" class="btn btn-blue">📋 Report Lost Item</a>
+        <a href="report_found.html" class="btn btn-white">📌 Post Found Item</a>
+    </div>
+</section>
+
+<!-- Counters -->
+<section class="counter-row">
+    <div class="counter-box">
+        <h3 id="stat-lost">0</h3> <!-- changed by js -->
+        <p>Lost Items</p>
+    </div>
+    <div class="counter-box">
+        <h3 id="stat-found">0</h3>
+        <p>Found Items</p>
+    </div>
+    <div class="counter-box">
+        <h3 id="stat-resolved">0</h3>
+        <p>Resolved</p>
+    </div>
+</section>
+
+<!-- Search -->
+<section class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search by name or location">
+    <select id="categoryFilter">
+        <option value="all">All Categories</option>
+        <option value="electronics">Electronics</option>
+        <option value="bags">Bags and Luggage</option>
+        <option value="clothing">Clothing</option>
+        <option value="keys">Keys</option>
+        <option value="accessories">Accessories</option>
+        <option value="books">Books and Stationery</option>
+        <option value="other">Other</option>
+    </select>
+    <button id="searchBtn">Search</button>
+</section>
+
+<!-- lost and found buttons -->
+<div class="tab-row">
+    <button class="tab-btn active" data-tab="lost">Lost Items</button>
+    <button class="tab-btn" data-tab="found">Found Items</button>
+</div>
+
+<!-- Lost items -->
+<section class="content-panel visible" data-panel="lost">
+    <div class="panel-top-row">
+        <h3>Recently Lost Items</h3>
+        <a href="report_Lost.html" class="btn btn-small btn-blue">+ Report Lost</a>
+        <!--button to add, redirect to report-->
+    </div>
+    <div class="cards-grid" id="lostItemsGrid"></div>
+</section>
+
+<!-- Found items -->
+<section class="content-panel" data-panel="found">
+    <div class="panel-top-row">
+        <h3>Recently Found Items</h3>
+        <a href="report_found.html" class="btn btn-small btn-blue">+ Post Found</a>
+    </div>
+    <div class="cards-grid" id="foundItemsGrid"></div>
+</section>
+
+<footer>
+    <p>&copy; 2026 YIC Lost &amp; Found Portal | CS381 Project</p>
+</footer>
+
+<div class="notifications-area" id="toast-area"></div>
+<script src="../JS/main.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var lost  = getLS('lostItems');
+        var found = getLS('foundItems');
+
+        //update the counter boxes
+        var lostActive= 0;
+        for (var i = 0; i < lost.length; i++) { 
+            if (lost[i].status!== 'resolved') lostActive++; //count only active
+        }
+        var foundActive= 0;
+        for (var j = 0; j < found.length; j++) {
+            if (found[j].status!== 'resolved') foundActive++; 
+        }
+        var resolvedCount = 0;
+        var all = lost.concat(found);
+        for (var k = 0; k < all.length; k++) {
+            if (all[k].status === 'resolved') resolvedCount++;//count resolved in both
+        }
+
+        document.getElementById('stat-lost').textContent= lostActive; //get active lost
+        document.getElementById('stat-found').textContent= foundActive;
+        document.getElementById('stat-resolved').textContent = resolvedCount;
+
+        // draw the item cards
+        renderCards(lost,'lostItemsGrid','lost');
+        renderCards(found,'foundItemsGrid','found');
+    });
+</script>
+</body>
+</html>

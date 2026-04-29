@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Found Item - YIC Lost & Found</title>
+    <link rel="stylesheet" href="../Style/style.css">
+</head>
+<body>
+
+<header class="top-bar">
+    <div class="logo-area">
+        <img src="YIC_Logo.png" alt="YIC Logo">
+        <div>
+            <h1>YIC Lost &amp; Found</h1>
+            <p>Yanbu Industrial Collage</p>
+        </div>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="report_Lost.html">Report Lost</a></li>
+            <li><a href="report_found.html" class="active">Post Found</a></li>
+            <li><a href="Dashboard.html">My Account</a></li>
+        </ul>
+    </nav>
+    <div class="top-bar-right" id="header-right"></div>
+</header>
+
+<p class="page-trail"><a href="index.html">Home</a> › Post Found Item</p>
+
+<div class="info-box info-box-green" style="max-width:600px;margin:18px auto 0">
+    🙌 <strong>Thank you for being honest!</strong> The owner must corectly describe the item before you hand it over.
+</div>
+
+<div class="form-box">
+    <h2>📌 Post a Found Item</h2><!--warning message under this -->
+    <p class="form-note">Describe what you found so the owner can identify it. Do not include PINs or passwords.</p>
+
+    <form id="foundForm" novalidate>
+
+        <div class="two-columns">
+            <div class="input-group">
+                <label for="itemTitle">Item Name <span class="required-star">*</span></label>
+                <input type="text" id="itemTitle" placeholder="e.g. IPhone 16" required minlength="3">
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label for="category">Category <span class="required-star">*</span></label>
+                <select id="category" required>
+                    <option value="">-- Select --</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="bags">Bags and Luggage</option>
+                    <option value="clothing">Clothing</option>
+                    <option value="keys">Keys </option>
+                    <option value="accessories">Accessories</option>
+                    <option value="books">Books and Stationery</option>
+                    <option value="other">Other</option>
+                </select>
+                <div class="input-error"></div>
+            </div>
+        </div>
+
+        <div class="two-columns">
+            <div class="input-group">
+                <label for="location">Where You Found It <span class="required-star">*</span></label>
+                <input type="text" id="location" placeholder="e.g. Lab B0-15" required minlength="3">
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label for="dateFound">Date Found <span class="required-star">*</span></label>
+                <input type="date" id="dateFound" required>
+                <div class="input-error"></div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="description">Description <span class="required-star">*</span></label>
+            <textarea id="description" placeholder="Describe the item clearly. Do not include private info like PINs or passwords." required minlength="20"></textarea>
+            <div class="input-error"></div>
+        </div>
+
+        <div class="input-group">
+            <label for="heldAt">Where is the item now? <span class="required-star">*</span></label>
+            <select id="heldAt" required>
+                <option value="">-- Select --</option>
+                <option value="self">With me (I am holding it)</option>
+                <option value="security">Handed to Security Office</option>
+                <option value="admin">Handed to College Admin</option>
+                <option value="dept">Left at Department Office</option>
+            </select>
+            <div class="input-error"></div>
+        </div>
+
+        <div class="input-group">
+            <label for="contactEmail">Contact Email <span class="required-star">*</span></label>
+            <input type="email" id="contactEmail" placeholder="id@rcjy.edu.sa" required>
+            <div class="input-error"></div>
+        </div>
+
+        <div class="line-divider"></div>
+
+        <!-- Photo upload -->
+        <div class="input-group">
+            <label>Photo (recomended)</label>
+            <div class="photo-upload" id="upload-zone">
+                <div class="cam-icon">📷</div>
+                <p>Click or drag a photo here</p>
+                <p>JPG, PNG — max 5 MB</p>
+                <input type="file" id="photo-input" accept="image/*">
+            </div>
+            <div class="photo-preview" id="img-preview">
+                <img src="" alt="Preview">
+                <button type="button" class="remove-photo">✕</button>
+            </div>
+        </div>
+
+        <div class="line-divider"></div>
+
+        <div class="info-box info-box-yellow">
+            ⚠️ The owner must <strong>prove ownership</strong> by describing the item accuratly before you hand it over.
+        </div>
+
+        <div class="form-bottom-btns">
+            <a href="index.html" class="btn btn-white">Cancel</a>
+            <button type="submit" class="btn btn-blue">Post Found Item →</button>
+        </div>
+
+    </form>
+</div>
+
+<!--Success popup -->
+<div class="popup-overlay" id="success-modal">
+    <div class="popup-box" style="text-align:center">
+        <div style="font-size:52px;margin-bottom:14px">📌</div>
+        <h3>Posted Successfuly!</h3>
+        <p>Your found item is now uploaded!</p>
+        <br>
+        <div class="form-bottom-btns" style="justify-content:center">
+            <a href="index.html" class="btn btn-white">Back to Home</a>
+            <a href="Dashboard.html" class="btn btn-blue">View My Posts</a>
+        </div>
+    </div>
+</div>
+
+<footer><p>&copy; 2026 YIC Lost &amp; Found Portal | CS381 Project</p></footer>
+<div class="notifications-area" id="toast-area"></div>
+<script src="../JS/main.js"></script>
+<script>
+    document.getElementById('dateFound').max = new Date().toISOString().split('T')[0]; //set max date to today,no future 
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var user = getUser();
+        if (user) document.getElementById('contactEmail').value = user.email;//if user is logged in, prefill the contact email
+    });
+
+    var heldLabels = { //labels for the heldAt
+        self:'With the finder',
+        security:'Security Office',
+        admin:'College Admin',
+        dept:'Department Office'
+    };
+
+    document.getElementById('foundForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!validateForm(this)) { toast('Please fix the errors above.', 'err'); return; }//validate the form
+
+        var user = getUser();//get current user to set the finder name and id
+        var items = getLS('foundItems');
+        var imgEl = document.querySelector('#img-preview img');
+        var imgData= (imgEl && imgEl.src && imgEl.src !== window.location.href) ? imgEl.src : '';
+        var rawDate= document.getElementById('dateFound').value;
+        var fmtDate = new Date(rawDate).toLocaleDateString('en-SA', { month: 'short', day: 'numeric', year: 'numeric' });
+        var heldVal= document.getElementById('heldAt').value;
+
+        var newItem = { //create the new found item object
+            id: nextId(items),
+            title:document.getElementById('itemTitle').value.trim(),
+            category: document.getElementById('category').value,
+            location:document.getElementById('location').value.trim(),
+            date:fmtDate,
+            description: document.getElementById('description').value.trim(),
+            icon: categoryIcon(document.getElementById('category').value),
+            image: imgData,
+            finder:user ? user.name:'Guest',//if not logged in, set as guest
+            finderId:user? user.id: null,
+            contact:document.getElementById('contactEmail').value.trim(),
+            heldAt:heldVal,
+            heldLabel: heldLabels[heldVal] ||heldVal,
+            status:'active'
+        };
+
+        items.push(newItem);//push the new item to list
+        setLS('foundItems', items); //save to local storage
+        openModal('success-modal');//show success popup
+    });
+</script>
+</body>
+</html>

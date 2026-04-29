@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - YIC Lost & Found</title>
+    <link rel="stylesheet" href="../Style/style.css">
+</head>
+<body>
+
+<header class="top-bar">
+    <div class="logo-area">
+        <img src="YIC_Logo.png" alt="YIC Logo">
+        <div>
+            <h1>YIC Lost &amp; Found</h1>
+            <p>Yanbu Industrial Collage</p>
+        </div>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="report_Lost.html">Report Lost</a></li>
+            <li><a href="report_found.html">Post Found</a></li>
+            <li><a href="Dashboard.html" class="active">My Account</a></li>
+        </ul>
+    </nav>
+    <div class="top-bar-right" id="header-right"></div>
+</header>
+
+<div class="dashboard-page">
+
+    <!-- Left side panel -->
+    <div class="dash-left-panel">
+        <div class="dash-user-area">
+            <div class="user-initials" id="dash-avatar">?</div>
+            <div class="user-full-name" id="dash-name">Loading...</div>
+            <div class="user-email-small" id="dash-email"></div>
+        </div>
+        <nav class="dash-menu">
+            <button class="dash-menu-item active" data-sec="overview">📊 Overview</button>
+            <button class="dash-menu-item" data-sec="my-lost">📋 My Lost Reports</button>
+            <button class="dash-menu-item" data-sec="my-found">📌 My Found Posts</button>
+            <button class="dash-menu-item" data-sec="profile">⚙️ Profile</button>
+            <button class="dash-menu-item logout" onclick="logout()">↩ Logout</button>
+        </nav>
+    </div>
+
+    <div>
+        <div class="dash-section active" id="sec-overview">
+            <div class="panel-top-row">
+                <h2>My Overview</h2>
+                <div style="display:flex;gap:8px">
+                    <a href="report_Lost.html"  class="btn btn-small btn-white">+ Report Lost</a>
+                    <a href="report_found.html" class="btn btn-small btn-blue">+ Post Found</a>
+                </div>
+            </div>
+            <div class="stat-cards-row" id="dash-stats"></div>
+            <div class="white-box">
+                <h3>Recent Activity</h3>
+                <div id="activity-list"></div>
+            </div>
+        </div>
+
+        <!-- lost -->
+        <div class="dash-section" id="sec-my-lost">
+            <div class="panel-top-row">
+                <h2>My Lost Reports</h2>
+                <a href="report_Lost.html" class="btn btn-small btn-blue">+ New Report</a>
+            </div>
+            <div id="my-lost-list"></div>
+        </div>
+
+        <!--found posts -->
+        <div class="dash-section" id="sec-my-found">
+            <div class="panel-top-row">
+                <h2>My Found Posts</h2>
+                <a href="report_found.html" class="btn btn-small btn-blue">+ Post Found</a>
+            </div>
+            <div id="my-found-list"></div>
+        </div>
+
+        <!--settings -->
+        <div class="dash-section" id="sec-profile">
+            <h2>⚙️ Profile Settings</h2>
+            <br>
+            <div class="white-box">
+                <form id="profileForm" novalidate>
+                    <div class="two-columns">
+                        <div class="input-group">
+                            <label for="pFirst">First Name <span class="required-star">*</span></label>
+                            <input type="text" id="pFirst" required minlength="2">
+                            <div class="input-error"></div>
+                        </div>
+                        <div class="input-group">
+                            <label for="pLast">Last Name <span class="required-star">*</span></label>
+                            <input type="text" id="pLast" required minlength="2">
+                            <div class="input-error"></div>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="pEmail">Email <span class="required-star">*</span></label>
+                        <input type="email" id="pEmail" required>
+                        <div class="input-error"></div>
+                    </div>
+                    <div class="line-divider"></div>
+                    <p style="font-size:13px;font-weight:600;margin-bottom:14px">Change Password</p>
+                    <div class="input-group">
+                        <label for="pCurrent">Current Password</label>
+                        <input type="password" id="pCurrent" placeholder="Current password" minlength="6">
+                    </div>
+                    <div class="input-group">
+                        <label for="new-password">New Password</label>
+                        <input type="password" id="new-password" placeholder="Min. 8 characters" minlength="8">
+                        <div class="pass-bar-bg"><div class="pass-bar-fill" id="strength-fill"></div></div>
+                    </div>
+                    <div class="input-group">
+                        <label for="pConfirm">Confirm New Password</label>
+                        <input type="password" id="pConfirm" placeholder="Repeat new password" data-match="new-password">
+                        <div class="input-error"></div>
+                    </div>
+                    <div class="form-bottom-btns">
+                        <button type="submit" class="btn btn-blue">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--Delete popup -->
+<div class="popup-overlay" id="delete-modal">
+    <div class="popup-box">
+        <div class="popup-top-row">
+            <h3>Delete Item</h3>
+            <button class="popup-close-btn" onclick="closeModal('delete-modal')">✕</button>
+        </div>
+        <p>Are you sure you want to delete <strong id="delete-item-name"></strong>? This cannot be undone.</p>
+        <br>
+        <div class="form-bottom-btns">
+            <button class="btn btn-white" onclick="closeModal('delete-modal')">Cancel</button>
+            <button class="btn btn-red"   id="confirm-delete-btn">Delete</button>
+        </div>
+    </div>
+</div>
+
+<footer><p>&copy; 2026 YIC Lost &amp; Found Portal | CS381 Project</p></footer>
+<div class="notifications-area" id="toast-area"></div>
+<script src="../JS/main.js"></script>
+<script>
+    var currentUser;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        currentUser = requireLogin();
+        if (!currentUser) return;///check user
+
+        //show initials at profile pic
+        var parts = currentUser.name.split(' ');
+        var initials = '';
+        for (var i = 0; i < parts.length && i < 2; i++) {
+            initials += parts[i][0].toUpperCase();
+        }
+        document.getElementById('dash-avatar').textContent = initials;
+        document.getElementById('dash-name').textContent = currentUser.name;
+        document.getElementById('dash-email').textContent = currentUser.email; //show name and email
+
+        //fill in the profile form
+        document.getElementById('pFirst').value= parts[0] || ''; //prefill first name,lasr,and meail
+        document.getElementById('pLast').value = parts.slice(1).join(' ') || '';
+        document.getElementById('pEmail').value = currentUser.email; 
+
+        loadDashboard();//load the dashboard 
+    });
+
+    function loadDashboard() {
+        var myLost  = getLS('lostItems').filter(function(i)  { return i.ownerId  === currentUser.id; });//filter lost items by user
+        var myFound = getLS('foundItems').filter(function(i) { return i.finderId === currentUser.id; });
+
+        // count resolved
+        var resolvedCount = 0;
+        var allMine = myLost.concat(myFound);
+        for (var i = 0; i < allMine.length; i++) {
+            if (allMine[i].status === 'resolved') resolvedCount++;
+        }
+
+        // stat cards
+        document.getElementById('dash-stats').innerHTML =
+        '<div class="stat-card"><div class="big-number">'+ myLost.length + '</div><div class="small-label">Lost Reports</div></div>' +
+        '<div class="stat-card green"><div class="big-number">'+ myFound.length + '</div><div class="small-label">Found Posts</div></div>'  +
+        '<div class="stat-card orange"><div class="big-number">'+ resolvedCount + '</div><div class="small-label">Resolved</div></div>';
+
+        // recent activity
+        var combined = [];
+        for (var j = 0; j < myLost.length;  j++) combined.push({ item: myLost[j],  type: 'lost' });
+        for (var k = 0; k < myFound.length; k++) combined.push({ item: myFound[k], type: 'found'});
+
+        if (!combined.length) { //no activity
+            document.getElementById('activity-list').innerHTML =
+                '<p style="color:#6b8ab0;font-size:13px">No activity yet. Start by reporting a lost item or posting a found one.</p>';
+        } else {//show recent activity, sorted by date
+            var recent = combined.slice(-5).reverse();
+            var html = '';
+            for (var r = 0; r < recent.length; r++) {
+                var entry = recent[r];
+                var it = entry.item;
+                var typ = entry.type;
+                var cls= it.status === 'resolved' ? 'tag-resolved' : (typ === 'lost' ? 'tag-lost' : 'tag-found');
+                var lbl = it.status === 'resolved' ? 'Resolved': (typ === 'lost' ? 'Lost' : 'Found');
+                var pic = it.image ? '<img src="' + it.image + '" alt="">' : '<span style="font-size:20px">' + it.icon + '</span>';
+                html +=
+                    '<div class="my-item-row">' +'<div class="my-item-thumbnail">' + pic + '</div>' +
+                    '<div class="my-item-text">' +'<div class="item-name">' + it.title + '</div>' +
+                    '<div class="item-sub">'  + (typ === 'lost' ? 'Lost' : 'Found') + ' · ' + it.location + ' · ' + it.date + '</div>' +
+                    '</div>' +'<span class="tag ' + cls + '">' + lbl + '</span>' +'</div>';
+            }//show 
+            document.getElementById('activity-list').innerHTML = html;
+        }
+
+        buildList(myLost,'my-lost-list',  'lost');//
+        buildList(myFound,'my-found-list', 'found');
+    }
+
+    function buildList(items, containerId, type) { //build the list of items
+        var container = document.getElementById(containerId);
+        if (!items.length) {//no item case
+            var icon = type === 'lost' ? '📋' : '📌';
+            container.innerHTML = '<div class="nothing-yet"><div class="big-emoji">' + icon + '</div><h3>Nothing here yet</h3></div>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < items.length; i++) {
+            var it  = items[i];
+            var cls = it.status === 'resolved' ? 'tag-resolved' : (type === 'lost' ? 'tag-lost' : 'tag-found');
+            var lbl = it.status === 'resolved' ? 'Resolved'     : (type === 'lost' ? 'Lost' : 'Found');
+            var pic = it.image ? '<img src="' + it.image + '" alt="">' : '<span style="font-size:20px">' + it.icon + '</span>';
+            html +=
+                '<div class="my-item-row">' + '<div class="my-item-thumbnail">' + pic + '</div>' +'<div class="my-item-text">' +
+                '<div class="item-name">' + it.title + '</div>' + '<div class="item-sub">'  + it.location + ' · ' + it.date + '</div>' +
+                '</div>' +'<div class="my-item-buttons">' +'<span class="tag ' + cls + '">' + lbl + '</span>' +
+                '<a href="items_details.html?id=' + it.id + '&type=' + type + '" class="btn btn-small btn-white">View</a>' +
+                '<button class="btn btn-small btn-green" onclick="changeStatus(' + it.id + ',\'' + type + '\')">Mark Resolved</button>' +
+                '<button class="btn btn-small btn-red"   onclick="promptDelete(' + it.id  + ',\'' + type + '\',\'' + it.title.replace(/'/g, "\\'") + '\')">Delete</button>' +
+                '</div>' +
+                '</div>';
+        }
+        container.innerHTML = html;
+    }
+
+    function changeStatus(id, type) { //change status of the item
+        var key = type === 'lost' ? 'lostItems' : 'foundItems';
+        var items = getLS(key);
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].id === id) {
+                items[i].status = items[i].status === 'resolved' ? 'active' : 'resolved';
+                break;
+            }
+        }
+        setLS(key, items);
+        toast('Status updated.', 'ok');
+        loadDashboard();
+    }
+
+    var pendingDelete = null;
+
+    function promptDelete(id, type, name) { //delete func
+        pendingDelete = { id: id, type: type };
+        document.getElementById('delete-item-name').textContent = name;
+        openModal('delete-modal');
+    }
+
+    document.getElementById('confirm-delete-btn').addEventListener('click', function() {
+        if (!pendingDelete) return; //check
+        var key = pendingDelete.type === 'lost' ? 'lostItems' : 'foundItems';
+        var items = getLS(key).filter(function(i) { return i.id !== pendingDelete.id; }); 
+        setLS(key, items);
+        closeModal('delete-modal');
+        toast('Item deleted.', 'ok');
+        loadDashboard();
+        pendingDelete = null;
+    });
+
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!validateForm(this)) return;
+
+        var newPass = document.getElementById('new-password').value;
+        if (newPass) { //verify cureent pass to change-- saftey
+            var currPass = document.getElementById('pCurrent').value;
+            var users = getLS('users');
+            var me = null;
+            for (var i = 0; i < users.length; i++) {
+                if (users[i].id === currentUser.id) { me= users[i]; break; } //find user
+            }
+            if (!me || me.password !== currPass) {//fetch user current pass and compare
+                toast('Current password is incorect.', 'err');
+                return;
+            }
+        }
+
+        var first = document.getElementById('pFirst').value.trim(); //prefill 
+        var last = document.getElementById('pLast').value.trim();
+        var email = document.getElementById('pEmail').value.trim();
+        var users = getLS('users');
+
+        for (var j = 0; j < users.length; j++) { //update user info in local storage
+            if (users[j].id === currentUser.id) {
+                users[j].name = first + ' ' + last;
+                users[j].email = email;
+                if (newPass) users[j].password = newPass;
+                break;
+            }
+        }
+        setLS('users', users);
+
+        currentUser.name = first + ' ' + last;  //update the info
+        currentUser.email = email;
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+        document.getElementById('dash-name').textContent  = currentUser.name; //show new info at dashboard
+        document.getElementById('dash-email').textContent = currentUser.email;
+        toast('Profile saved!', 'ok');
+        document.getElementById('pCurrent').value = ''; //clear fields
+        document.getElementById('new-password').value = '';
+        document.getElementById('pConfirm').value = ''; 
+    });
+</script>
+</body>
+</html>

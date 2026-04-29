@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Detail - YIC Lost & Found</title>
+    <link rel="stylesheet" href="../Style/style.css">
+</head>
+<body>
+
+<header class="top-bar">
+    <div class="logo-area">
+        <img src="YIC_Logo.png" alt="YIC Logo">
+        <div>
+            <h1>YIC Lost &amp; Found</h1>
+            <p>Yanbu Industrial Collage</p>
+        </div>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="report_Lost.html">Report Lost</a></li>
+            <li><a href="report_found.html">Post Found</a></li>
+            <li><a href="Dashboard.html">My Account</a></li>
+        </ul>
+    </nav>
+    <div class="top-bar-right" id="header-right"></div>
+</header>
+
+<p class="page-trail"> <!-- e.q. :Home › Lost Items › iPhone 14-->
+    <a href="index.html">Home</a> › <!-- return home-->
+    <span id="bc-type">Items</span> ›
+    <span id="bc-title">Loading...</span><!--holder-->
+</p>
+
+<!-- filled by js -->
+<div class="detail-page" id="detail-page"></div>
+
+<!-- Message popup if user click found -->
+<div class="popup-overlay" id="msg-modal">
+    <div class="popup-box">
+        <div class="popup-top-row">
+            <h3 id="msg-modal-title">Send a Message</h3>
+            <button class="popup-close-btn" onclick="closeModal('msg-modal')">✕</button>
+        </div>
+        <p id="msg-modal-sub" style="font-size:13px;color:#6b8ab0;margin-bottom:14px"></p>
+        <form id="msgForm" novalidate>
+            <div class="input-group">
+                <label for="msgName">Your Name <span class="required-star">*</span></label>
+                <input type="text" id="msgName" placeholder="Your full name" required>
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label for="msgEmail">Your Email <span class="required-star">*</span></label>
+                <input type="email" id="msgEmail" placeholder="your@rcjy.edu.sa" required>
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label for="msgText">Message <span class="required-star">*</span></label>
+                <textarea id="msgText" placeholder="Explain why this item belongs to you, or how you found it..." required minlength="20"></textarea>
+                <div class="input-error"></div>
+            </div>
+            <div class="form-bottom-btns">
+                <button type="button" class="btn btn-white" onclick="closeModal('msg-modal')">Cancel</button>
+                <button type="submit" class="btn btn-blue">Send Message →</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer><p>&copy; 2026 YIC Lost &amp; Found Portal | CS381 Project</p></footer>
+<div class="notifications-area" id="toast-area"></div>
+<script src="../JS/main.js"></script>
+<script>
+    //get id and type from the URL
+    function getParam(name) {
+        return new URLSearchParams(window.location.search).get(name); 
+    }
+
+    var itemId   = parseInt(getParam('id'));
+    var itemType = getParam('type');
+    var heldLabels = {
+        self:'With the finder', security:'Security Office',
+        admin:'College Admin',dept:'Department Office'
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var pool =itemType === 'lost' ? getLS('lostItems') :getLS('foundItems'); //pool (type) based on url
+        var item = null;
+        for (var i =0; i< pool.length; i++) {
+            if (pool[i].id === itemId) {item = pool[i]; break;}//find the item in the pool type
+        }
+
+        if (!item) {
+            document.getElementById('detail-page').innerHTML =
+                '<p style="padding:40px;color:#6b8ab0">Item not found. <a href="index.html">Go back</a></p>';
+            return; //case notfound itrm
+        }
+
+        var isLost= itemType === 'lost';
+
+        document.getElementById('bc-type').textContent  =isLost ? 'Lost Items' :'Found Items'; //update top based on typw
+        document.getElementById('bc-title').textContent =item.title;
+        document.title= item.title+ '- YIC Lost & Found';
+
+// card info
+        var tagCls= item.status === 'resolved' ? 'tag-resolved': (isLost ? 'tag-lost' :'tag-found');
+        var tagTxt = item.status === 'resolved' ? 'Resolved':(isLost ? 'Lost': 'Found');//status
+        var person= isLost ? (item.owner || '—'): (item.find|| '—');//if lost owner, else dinder
+        var personLbl= isLost ? 'Reported by' : 'Found by';
+        var btnLabel = isLost ? '✋ I Found This Item' : '📩 This Is Mine'; //if lost show first button, found show secound
+
+        var photoHtml = item.image
+            ? '<img src="' + item.image + '" alt="' + item.title + '">' //show the image if exist
+            : '<span style="font-size:80px">' + item.icon + '</span>'; //else show the icon
+
+        var heldRow = '';
+        if (!isLost && item.heldAt) {
+            heldRow = '<div class="kv-row"><span class="kv-label">Item held at</span><span class="kv-data">' +
+            (heldLabels[item.heldAt] || item.heldAt) + '</span></div>';//if found show holder
+        }
+
+        var rewardRow = '';
+        if (isLost && item.reward) { //if lost and have reward show it
+            rewardRow = '<div class="kv-row"><span class="kv-label">Reward</span><span class="kv-data">💰 ' + item.reward + '</span></div>';
+        }
+
+        document.getElementById('detail-page').innerHTML =
+
+            //item card details
+        '<div>' + '<div class="detail-card">' +'<div class="detail-big-photo">' + photoHtml + '</div>' +
+        '<div class="detail-text">' +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">' +
+        '<span class="tag ' + (isLost ? 'tag-lost' : 'tag-found') + '">' + (isLost ? 'Lost' : 'Found') + '</span>' +
+        '<span class="tag ' + tagCls + '">' + tagTxt + '</span>' +'</div>' +'<h1>' + item.title + '</h1>' +'<div class="detail-info-row">' +
+        '<span>📍 ' + item.location + '</span>' +'<span>📅 ' + (isLost ? 'Lost' : 'Found') + ': ' + item.date + '</span>' +
+        '<span>👤 ' + personLbl + ': ' + person + '</span>' +
+        '</div>' +'<div class="small-heading">Description</div>' +'<p>' + item.description + '</p>' +
+        (item.reward ? '<div class="small-heading">Reward</div><p>💰 ' + item.reward + '</p>' : '') +'</div>' +
+            '</div>' +'</div>' +
+
+            //response box
+            '<div class="right-column">' +'<div class="side-card" style="border:2px solid #3b82f6">' +
+            '<h3>' + (isLost ? 'Found This Item?' : 'Is This Yours?') + '</h3>' +'<p style="font-size:13px;color:#6b8ab0;margin-bottom:14px">' +
+            (isLost ? 'If you found this item, send a mesage to the owner and they will verfy your claim.'
+            : 'If this is your item, send a mesage to the finder and prove ownership by describing it.') +
+            '</p>' +'<button class="btn btn-blue" onclick="openContactModal()">' + btnLabel + '</button><br><br>' +
+            '<button class="btn btn-white btn-small" style="width:100%" onclick="copyLink()">🔗 Share Link</button>' +'</div>' +
+            '<div class="side-card">' + '<h3>Item Details</h3>' +
+                    '<div class="key-value-list">' +
+                        '<div class="kv-row"><span class="kv-label">Category</span><span class="kv-data">' + item.category + '</span></div>' +
+                        '<div class="kv-row"><span class="kv-label">Date</span><span class="kv-data">'     + item.date     + '</span></div>' +
+                        '<div class="kv-row"><span class="kv-label">Location</span><span class="kv-data">' + item.location + '</span></div>' +
+                        '<div class="kv-row"><span class="kv-label">Status</span><span class="kv-data">'   + tagTxt        + '</span></div>' +
+                        rewardRow + heldRow +
+                    '</div>' +
+                '</div>' +
+
+                '<div class="side-card info-box-yellow">' + '<h3 style="color:#92400e">Safety Reminder</h3>' +
+                '<p style="font-size:13px;color:#78350f">Always meet in a public place on campus. Contact Security if you feel unsafe.</p>' +
+                '</div>' +
+            '</div>';
+
+        // pre-fill the message form, accessability and user improvment
+        var user = getUser();
+        if (user) {
+            document.getElementById('msgName').value = user.name;
+            document.getElementById('msgEmail').value = user.email;
+        }
+
+        document.getElementById('msg-modal-title').textContent = isLost ? 'I Found This Item' : 'Claim This Item';
+        document.getElementById('msg-modal-sub').textContent = isLost //message based on type
+            ? 'Describe how you found the item and give details that prove you actualy have it.'
+            : 'Describe the item accuratly to prove it belonds to you. The finder will then contact you.';
+    });
+
+    function openContactModal() { openModal('msg-modal'); }//open the message 
+
+    function copyLink() { ///copy the current page link to clipboard
+        navigator.clipboard.writeText(window.location.href)
+            .then(function() { toast('Link copied!', 'ok'); })
+            .catch(function() { toast('Could not copy link.', 'err'); });//er casse
+    }
+
+    document.getElementById('msgForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!validateForm(this)) return; //validate the message form
+
+        var messages = getLS('messages');
+        messages.push({
+            id: nextId(messages),
+            itemId:itemId,
+            itemType: itemType,
+            itemTitle: document.getElementById('bc-title').textContent,
+            senderName: document.getElementById('msgName').value.trim(),
+            senderEmail: document.getElementById('msgEmail').value.trim(),
+            message: document.getElementById('msgText').value.trim(),
+            date: new Date().toLocaleDateString('en-SA', { month: 'short', day: 'numeric', year: 'numeric' })
+        }); 
+        setLS('messages', messages);
+
+        closeModal('msg-modal');
+        toast('Message sent! The ' + (itemType === 'lost'?'owner' : 'finder') +' will contact you ', 'ok');//notify the user that the message was sent
+        this.reset();//reset the form
+    });
+</script>
+</body>
+</html>

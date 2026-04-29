@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - YIC Lost & Found</title>
+    <link rel="stylesheet" href="../Style/style.css">
+</head>
+<body>
+
+<div class="login-page" id="login-page">
+    <div class="login-card">
+        <div class="site-title">🔒 YIC Lost &amp; Found</div>
+        <h2>Welcome back</h2>
+        <p class="login-subtitle">Sign in to your YIC account</p>
+
+        <div class="demo-accounts"> <!--just demo, later db-->
+            📌 Student: <strong>4311085@rcjy.edu.sa</strong> / <strong>123456</strong><br>
+            🔑 Admin: <strong>admin@rcjy.edu.sa</strong> / <strong>123456</strong>
+        </div>
+
+        <form id="loginForm" novalidate>
+            <div class="input-group">
+                <label for="loginEmail">Email <span class="required-star">*</span></label>
+                <input type="email" id="loginEmail" placeholder="id@rcjy.edu.sa" required>
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label for="loginPass">Password <span class="required-star">*</span></label>
+                <input type="password" id="loginPass" placeholder="Enter your password" required minlength="6">
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="rememberMe"> Remember me
+                </label>
+            </div>
+            <button type="submit" class="btn btn-blue" style="width:100%">Sign In →</button>
+        </form>
+
+        <div class="switch-page">
+            No account? <a onclick="showRegister()">Register here</a> <!--move to register form-->
+        </div>
+        <div class="switch-page">
+            <a href="index.html">← Back to Browse</a>
+        </div>
+    </div>
+</div>
+
+<!--Register Card -->
+<div class="login-page" id="register-page" style="display:none">
+    <div class="login-card">
+        <div class="site-title">✨ YIC Lost &amp; Found</div>
+        <h2>Create Account</h2>
+        <p class="login-subtitle">Register with your YIC collage email</p>
+
+        <form id="registerForm" novalidate>
+            <div class="two-columns">
+                <div class="input-group">
+                    <label for="regFirst">First Name <span class="required-star">*</span></label>
+                    <input type="text" id="regFirst" placeholder="Norah" required minlength="2">
+                    <div class="input-error"></div>
+                </div>
+                <div class="input-group">
+                    <label for="regLast">Last Name <span class="required-star">*</span></label>
+                    <input type="text" id="regLast" placeholder="AlHosain" required minlength="2">
+                    <div class="input-error"></div>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="regEmail">Collage Email <span class="required-star">*</span></label>
+                <input type="email" id="regEmail" placeholder="id@rcjy.edu.sa" required>
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label for="new-password">Password <span class="required-star">*</span></label>
+                <input type="password" id="new-password" placeholder="Min. 8 characters" required minlength="8">
+                <div class="pass-bar-bg"><div class="pass-bar-fill" id="strength-fill"></div></div>
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label for="regConfirm">Confirm Password <span class="required-star">*</span></label>
+                <input type="password" id="regConfirm" placeholder="Repeat password" required data-match="new-password">
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="agreeTerms" required>
+                    I agree to the Terms of Use.
+                </label>
+                <div class="input-error" id="terms-error"></div>
+            </div>
+            <button type="submit" class="btn btn-blue" style="width:100%">Create Account →</button>
+        </form>
+
+        <div class="switch-page">
+            Already have an account? <a onclick="showLogin()">Sign in</a> <!--return-->
+        </div>
+    </div>
+</div>
+
+<div class="notifications-area" id="toast-area"></div>
+<script src="../JS/main.js"></script>
+<script>
+    function showRegister() {
+        document.getElementById('login-page').style.display= 'none';//show only reg
+        document.getElementById('register-page').style.display = 'flex';
+    }
+    function showLogin() {
+        document.getElementById('register-page').style.display = 'none'; //show only login
+        document.getElementById('login-page').style.display = 'flex';
+    }
+
+    //fill in the saved email
+    var savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+        document.getElementById('loginEmail').value   = savedEmail;
+        document.getElementById('rememberMe').checked = true;
+    }
+
+    //login
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!validateForm(this)) { toast('Please fix the errors.', 'err'); return; }
+
+        var email = document.getElementById('loginEmail').value.trim();
+        var pass  = document.getElementById('loginPass').value;
+        var users = getLS('users');
+
+        //find the user with matching email and password
+        var found = null;
+        for (var i = 0; i < users.length; i++) {
+            if (users[i].email === email && users[i].password === pass) {
+                found = users[i];
+                break;
+            }
+        }
+
+        if (!found) { toast('Incorect email or password.', 'err'); return; } //not found, error
+
+        if (document.getElementById('rememberMe').checked) { //if checked, remeber user info
+            localStorage.setItem('rememberedEmail', email);
+        } else {
+            localStorage.removeItem('rememberedEmail');
+        }
+
+        localStorage.setItem('currentUser', JSON.stringify({
+            id: found.id, name: found.name, email: found.email, role: found.role
+        })); // save info
+
+        toast('Welcome back, ' + found.name + '!', 'ok');
+        setTimeout(function() {
+            location.href = found.role === 'admin' ? 'admin.html' : 'Dashboard.html';//use admin html for admin
+        }, 700); //error with page, when admin click account dashboard shows-- fikx
+    });
+
+    //register
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        var agree = document.getElementById('agreeTerms'); //agree to terms= create
+        var termsErr = document.getElementById('terms-error');
+        if (!agree.checked) {
+            termsErr.textContent = 'You must agree to the terms.';
+            termsErr.classList.add('show');
+            return;
+        }
+        termsErr.classList.remove('show'); 
+
+        if (!validateForm(this)) { toast('Please fix the errors.', 'err'); return; }
+
+        var first = document.getElementById('regFirst').value.trim();
+        var last = document.getElementById('regLast').value.trim();
+        var email = document.getElementById('regEmail').value.trim();
+        var pass= document.getElementById('new-password').value;
+        var users = getLS('users');
+
+        //check if email is used
+        for (var i = 0; i < users.length; i++) {
+            if (users[i].email === email) {
+                toast('This email is already registred.', 'err');
+                return;
+            }
+        }
+
+        var newUser = { //useer obj
+            id: nextId(users),
+            name: first + ' ' + last,
+            email:email,
+            password: pass,
+            role: 'student'
+        };
+
+        users.push(newUser); //push to users
+        setLS('users', users);
+
+        localStorage.setItem('currentUser', JSON.stringify({
+            id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role
+        }));
+
+        toast('Account created! Welcom, ' + newUser.name + '!', 'ok'); 
+        setTimeout(function() { location.href = 'Dashboard.html'; }, 800);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - YIC Lost & Found</title>
+    <link rel="stylesheet" href="../Style/style.css">
+</head>
+<body>
+
+<div class="admin-page">
+
+    <!-- Left sidebar -->
+    <div class="admin-left-bar">
+        <div class="admin-logo-box">🛡️ Admin Panel</div>
+        <nav class="admin-menu">
+            <button class="admin-menu-item active" data-sec="overview">📊 Overview</button>
+            <button class="admin-menu-item" data-sec="items">📦 All Items</button>
+            <button class="admin-menu-item" data-sec="messages">✉️ Messages</button>
+            <button class="admin-menu-item" data-sec="users">👥 Users</button>
+            <button class="admin-menu-item" onclick="location.href='index.html'">🏠 View Portal</button>
+            <button class="admin-menu-item" onclick="logout()">↩ Logout</button>
+        </nav>
+    </div>
+
+    <div class="admin-main-area">
+
+        <div class="admin-top-strip">
+            <h1 id="admin-page-title">Overview</h1>
+            <span id="admin-name-badge"></span>
+        </div>
+
+        <div class="admin-section active" id="adm-overview">
+            <div class="stat-cards-row" id="adm-stats"></div>
+            <div class="two-col-grid">
+                <div class="white-box">
+                    <h3>Recent Lost Reports</h3>
+                    <div id="adm-recent-lost"></div>
+                </div>
+                <div class="white-box">
+                    <h3>Recent Found Posts</h3>
+                    <div id="adm-recent-found"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-section" id="adm-items"> <!-- all items table-->
+            <div class="filter-buttons">
+                <select id="items-type-filter" class="btn btn-white btn-small" onchange="loadItems()">
+                    <option value="all">All Types</option>
+                    <option value="lost">Lost Only</option>
+                    <option value="found">Found Only</option>
+                </select>
+                <select id="items-status-filter" class="btn btn-white btn-small" onchange="loadItems()">
+                    <option value="all">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="resolved">Resolved</option>
+                </select>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Item</th>
+                        <th>Type</th>
+                        <th>Reporter</th>
+                        <th>Date</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="items-tbody"></tbody>
+            </table>
+        </div>
+
+        <!--messages -->
+        <div class="admin-section" id="adm-messages">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Item</th>
+                        <th>From</th>
+                        <th>Email</th>
+                        <th>Date</th>
+                        <th>Message</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="messages-tbody"></tbody>
+            </table>
+        </div>
+
+        <!--all users -->
+        <div class="admin-section" id="adm-users">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-tbody"></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<!--edit item popup -->
+<div class="popup-overlay" id="edit-modal">
+    <div class="popup-box">
+        <div class="popup-top-row">
+            <h3>Edit Item</h3>
+            <button class="popup-close-btn" onclick="closeModal('edit-modal')">✕</button>
+        </div>
+        <form id="editForm" novalidate>
+            <input type="hidden" id="edit-id">
+            <input type="hidden" id="edit-type">
+            <div class="input-group">
+                <label>Item Name <span class="required-star">*</span></label>
+                <input type="text" id="edit-title" required minlength="3">
+                <div class="input-error"></div>
+            </div>
+            <div class="two-columns">
+                <div class="input-group">
+                    <label>Category <span class="required-star">*</span></label>
+                    <select id="edit-category" required>
+                        <option value="electronics">Electronics</option>
+                        <option value="bags">Bags and Luggage</option>
+                        <option value="clothing">Clothing</option>
+                        <option value="keys">Keys</option>
+                        <option value="accessories">Accessories</option>
+                        <option value="books">Books and Stationery</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Status</label>
+                    <select id="edit-status">
+                        <option value="active">Active</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Location <span class="required-star">*</span></label>
+                <input type="text" id="edit-location" required>
+                <div class="input-error"></div>
+            </div>
+            <div class="input-group">
+                <label>Description</label>
+                <textarea id="edit-desc"></textarea>
+            </div>
+            <div class="form-bottom-btns">
+                <button type="button" class="btn btn-white" onclick="closeModal('edit-modal')">Cancel</button>
+                <button type="submit" class="btn btn-blue">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete confirm popup -->
+<div class="popup-overlay" id="adm-delete-modal">
+    <div class="popup-box">
+        <div class="popup-top-row">
+            <h3>Confirm Delete</h3>
+            <button class="popup-close-btn" onclick="closeModal('adm-delete-modal')">✕</button>
+        </div>
+        <p>Are you sure you want to delete <strong id="adm-delete-name"></strong>?</p>
+        <br>
+        <div class="form-bottom-btns">
+            <button class="btn btn-white" onclick="closeModal('adm-delete-modal')">Cancel</button>
+            <button class="btn btn-red"   id="adm-confirm-delete">Delete</button>
+        </div>
+    </div>
+</div>
+
+<div class="notifications-area" id="toast-area"></div>
+<script src="../JS/main.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var user = requireLogin('admin');
+        if (!user) return; //if not logged in or not admin, redirect to login
+        document.getElementById('admin-name-badge').textContent = '👩‍💼 ' + user.name;//show at top
+        loadOverview();
+        loadItems();
+        loadMessages();
+        loadUsers();//load everything
+    });
+
+    //Overview
+    function loadOverview() {
+        var lost  = getLS('lostItems');
+        var found = getLS('foundItems');
+        var all = lost.concat(found);
+        var active =0, resolved = 0;
+        for (var i = 0; i < all.length; i++) {
+            if (all[i].status === 'resolved') resolved++; //count resolved else active
+            else active++;
+        }
+
+        document.getElementById('adm-stats').innerHTML =
+            '<div class="stat-card"><div class="big-number">' + all.length 
+            + '</div><div class="small-label">Total Items</div></div>'+
+            '<div class="stat-card green"><div class="big-number">'+ active 
+            + '</div><div class="small-label">Active</div></div>'+
+            '<div class="stat-card orange"><div class="big-number">' + resolved 
+            + '</div><div class="small-label">Resolved</div></div>'+
+            '<div class="stat-card purple"><div class="big-number">'+ getLS('users').length 
+            + '</div><div class="small-label">Users</div></div>'+
+            '<div class="stat-card"><div class="big-number">'+ getLS('messages').length + 
+            '</div><div class="small-label">Messages</div></div>';
+
+        document.getElementById('adm-recent-lost').innerHTML= buildMiniList(lost,  'lost');//lost item list for admin
+        document.getElementById('adm-recent-found').innerHTML= buildMiniList(found, 'found');//found
+    }
+
+    function buildMiniList(items, type) {
+        if (!items.length) return '<p>None yet.</p>';//no items
+        var recent = items.slice(-4).reverse(); //get last 4, reverse so must recent at top
+        var html = '';
+        for (var i = 0; i < recent.length; i++) {
+            var it = recent[i];
+            var cls= it.status === 'resolved' ? 'tag-resolved' :(type === 'lost' ? 'tag-lost' : 'tag-found');//class  
+            var lbl= it.status === 'resolved' ? 'Resolved': (type === 'lost' ? 'Lost' : 'Found'); //status text
+            html += '<div class="mini-item-row"><span>'+ it.icon + ' ' + it.title + 
+            '</span><span class="tag ' + cls + '">' + lbl + '</span></div>'; //item
+        }
+        return html;
+    }
+
+    //All Items table
+    function loadItems() {
+        var typeF = document.getElementById('items-type-filter').value;
+        var statusF = document.getElementById('items-status-filter').value;
+        var rows = [];
+
+        if (typeF !== 'found') {
+            var lost = getLS('lostItems'); //get lost items
+            for (var i = 0; i < lost.length; i++) { //add type to each item
+                var copy = {}; for (var k in lost[i]) copy[k] =lost[i][k];
+                copy._type = 'lost'; rows.push(copy); //add to rows
+            }
+        }
+        if (typeF !== 'lost') {
+            var found = getLS('foundItems');
+            for (var j = 0; j < found.length; j++) {
+                var copy2 = {}; for (var k2 in found[j]) copy2[k2] = found[j][k2];
+                copy2._type = 'found'; rows.push(copy2); //same for found 
+            }
+        }
+        if (statusF !== 'all') { //filter by status
+            rows = rows.filter(function(i) { return i.status === statusF; });
+        }
+
+        var tbody = document.getElementById('items-tbody');
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8ab0">No items found.</td></tr>';
+            return; //if no items after filter, show message
+        }
+
+        var html = '';
+        for (var r = 0; r < rows.length; r++) {
+            var item = rows[r]; 
+            var typeCls = item._type === 'lost' ? 'tag-lost' : 'tag-found'; 
+            var stsCls = item.status === 'resolved' ? 'tag-resolved' : item.status === 'pending' ? 'tag-pending' : '';
+            var reporter= item._type === 'lost' ? (item.owner || '—') : (item.finder || '—');
+            html +=
+                '<tr>' +
+                '<td>' + (r + 1) + '</td>' +
+                '<td>' + item.icon + ' ' + item.title + '</td>' +
+                '<td><span class="tag ' + typeCls + '">' + item._type + '</span></td>' +
+                '<td>' + reporter + '</td>' +
+                '<td>' + item.date + '</td>' +
+                '<td>' + item.location + '</td>' +
+                '<td><span class="tag ' + stsCls + '">' + item.status + '</span></td>' +
+                '<td class="row-buttons">' +
+                '<button class="btn btn-small btn-blue" onclick="openEdit(' + item.id + ',\'' + item._type + '\')">Edit</button>' +
+                '<button class="btn btn-small btn-red"  onclick="promptDelete(' + item.id + ',\'' + item._type + '\',\'' + item.title.replace(/'/g, "\\'") + '\')">Delete</button>' +
+                '</td>' +
+                '</tr>'; //edit and delete buttons with item info for admin
+        }
+        tbody.innerHTML = html;
+    }
+
+    // Messages table
+    function loadMessages() {
+        var msgs = getLS('messages');
+        var tbody = document.getElementById('messages-tbody');
+        if (!msgs.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8ab0">No messages yet.</td></tr>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < msgs.length; i++) {
+            var m = msgs[i];
+            var preview = m.message.length > 80 ? m.message.slice(0, 80) + '...' : m.message;
+            html +=
+                '<tr>' +
+                '<td>' + (i + 1) + '</td>' +
+                '<td>' + (m.itemTitle || 'Item #' + m.itemId) + '</td>' +
+                '<td>' + m.senderName  + '</td>' +
+                '<td>' + m.senderEmail + '</td>' +
+                '<td>' + (m.date || '—') + '</td>' +
+                '<td>' + preview + '</td>' +
+                '<td><button class="btn btn-small btn-red" onclick="deleteMessage(' + m.id + ')">Delete</button></td>' +
+                '</tr>';
+        }
+        tbody.innerHTML = html;
+    }
+
+    function deleteMessage(id) { //delete message
+        setLS('messages', getLS('messages').filter(function(m) { return m.id !== id; }));
+        loadMessages(); //reload messages
+        loadOverview();
+        toast('Message deleted.', 'ok'); //notify
+    }
+
+    // Users table
+    function loadUsers() {
+        var users = getLS('users');
+        var html  = '';
+        for (var i = 0; i < users.length; i++) {
+            var u = users[i];
+            var roleCls = u.role === 'admin' ? 'tag-pending' : 'tag-found';
+            var action  = u.role !== 'admin'
+                ? '<button class="btn btn-small btn-red" onclick="deleteUser(' + u.id + ',\'' + u.name.replace(/'/g, "\\'") + '\')">Delete</button>'
+                : '<span class="protected-text">Protected</span>';
+            html +=
+                '<tr>' +
+                '<td>' + (i + 1) + '</td>' +
+                '<td>' + u.name  + '</td>' +
+                '<td>' + u.email + '</td>' +
+                '<td><span class="tag ' + roleCls + '">' + u.role + '</span></td>' +
+                '<td>' + action + '</td>' +
+                '</tr>';
+        }
+        document.getElementById('users-tbody').innerHTML = html;
+    }
+
+    function deleteUser(id, name) { //delete user
+        if (!confirm('Delete user "' + name + '"?')) return;//confirm
+        setLS('users', getLS('users').filter(function(u) { return u.id !== id; }));
+        loadUsers();
+        loadOverview();//reload
+        toast('User "' + name + '" deleted.', 'ok');//notify
+    }
+
+    // Edit item
+    function openEdit(id, type) { 
+        var key   = type === 'lost' ?'lostItems' : 'foundItems';
+        var items = getLS(key);
+        var item  = null;
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].id === id) { item = items[i]; break; }
+        }
+        if (!item) return;
+
+        document.getElementById('edit-id').value  = id;
+        document.getElementById('edit-type').value = type;
+        document.getElementById('edit-title').value = item.title;
+        document.getElementById('edit-category').value = item.category;
+        document.getElementById('edit-status').value= item.status;
+        document.getElementById('edit-location').value= item.location;
+        document.getElementById('edit-desc').value = item.description; //fill the edit form 
+        openModal('edit-modal'); //open the edit popup
+    }
+
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!validateForm(this)) return; //validate form before submit
+
+        var id = parseInt(document.getElementById('edit-id').value);
+        var type  = document.getElementById('edit-type').value;
+        var key = type === 'lost' ? 'lostItems' : 'foundItems';
+        var items = getLS(key);
+
+        for (var i = 0; i < items.length; i++) { //find the item in the list and update its properties 
+            if (items[i].id === id) {
+                items[i].title = document.getElementById('edit-title').value.trim();
+                items[i].category= document.getElementById('edit-category').value;
+                items[i].status = document.getElementById('edit-status').value;
+                items[i].location = document.getElementById('edit-location').value.trim();
+                items[i].description = document.getElementById('edit-desc').value.trim();
+                items[i].icon = categoryIcon(items[i].category); 
+                break;
+            }
+        }
+        setLS(key, items);
+        closeModal('edit-modal');
+        loadItems();
+        loadOverview(); //reload
+        toast('Item updated.', 'ok');//notify
+    });
+
+    // Delete item
+    var pendingDelete = null;
+
+    function promptDelete(id, type, name) {
+        pendingDelete = { id: id, type: type };//store pending delete info
+        document.getElementById('adm-delete-name').textContent = name;
+        openModal('adm-delete-modal'); //open confirm delete popup 
+    }
+
+    document.getElementById('adm-confirm-delete').addEventListener('click', function() {
+        if (!pendingDelete) return; //safety check
+        var key = pendingDelete.type === 'lost' ? 'lostItems' : 'foundItems';
+        setLS(key, getLS(key).filter(function(i) { return i.id !== pendingDelete.id; }));//delete the item from storage
+        closeModal('adm-delete-modal');
+        loadItems();
+        loadOverview();
+        toast('Item deleted.', 'ok');
+        pendingDelete = null;
+    });
+</script>
+</body>
+</html>
