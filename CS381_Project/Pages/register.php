@@ -3,7 +3,7 @@ session_start();
 require_once '../includes/db.php';
 require_once '../includes/auth.php';
 
-//logged in= dashboard
+// if logged in go to dashboard
 if (isLoggedIn()) {
     header('Location: dashboard.php');
     exit();
@@ -11,7 +11,9 @@ if (isLoggedIn()) {
 
 $errors = [];
 $success = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();
 
     // Get form data
     $name = trim($_POST['name']);
@@ -19,13 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'];
     $confirm = $_POST['confirm_password'];
 
-    //Validation
+    // Validation
     if (empty($name)) $errors[] = 'Name is required';
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Please enter a valid email';
     if (strlen($password) < 8) $errors[] = 'Password must be at least 8 characters';
     if ($password !== $confirm) $errors[] = 'Passwords doesnt match';
 
-    //Check email not used 
+    // Check email not used
     if (empty($errors)) {
         $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
         $stmt->execute([$email]);
@@ -34,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    //Insert user in db
+    // Insert user in db
     if (empty($errors)) {
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'student')");
@@ -42,13 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $newId = $pdo->lastInsertId();
 
-        // Auto-login 
+        // Auto login create session
         session_regenerate_id(true);
         $_SESSION['logged_in'] = true;
         $_SESSION['user_id'] = $newId;
         $_SESSION['user_name'] = $name;
         $_SESSION['user_email'] = $email;
-        $_SESSION['user_role'] = 'student';
+        $_SESSION['user_role']= 'student';
 
         header('Location: dashboard.php');
         exit();
@@ -80,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" action="register.php">
+            <?php csrfField(); ?>
             <div class="input-group">
                 <label for="name">Full Name *</label>
                 <input type="text" id="name" name="name"

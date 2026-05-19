@@ -5,6 +5,12 @@ require_once '../includes/auth.php';
 
 requireLogin();
 
+// CSRF check via GET token
+if (!isset($_GET['csrf_token']) || $_GET['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {
+    http_response_code(403);
+    die('Invalid CSRF token. Please go back and try again.');
+}
+
 $id = filter_var($_GET['id'] ?? 0, FILTER_VALIDATE_INT);
 $type = $_GET['type'] ?? 'lost';
 

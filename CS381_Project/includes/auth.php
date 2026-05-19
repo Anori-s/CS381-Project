@@ -18,8 +18,26 @@ function requireAdmin() {
         exit();
     }
 }
-//prevent XSS
+// Prevent XSS
 function e($string) {
     return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+}
+// Generate CSRF token (stored in session)
+function csrfToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+// Output a hidden CSRF input field
+function csrfField() {
+    echo '<input type="hidden" name="csrf_token" value="' . csrfToken() . '">';
+}
+// Verify CSRF token — call at top of every POST handler
+function verifyCsrf() {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {
+        http_response_code(403);
+        die('Invalid CSRF token. Please go back and try again.');
+    }
 }
 ?>

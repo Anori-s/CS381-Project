@@ -3,51 +3,50 @@ session_start();
 require_once '../includes/db.php';
 require_once '../includes/auth.php';
 
-requireAdmin();// Only admins can access this page
+requireAdmin(); // Only admins can access this page
 
-$section = $_GET['section'] ?? 'overview';
-//show numbers
-$totalUsers= $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
-$totalLost= $pdo->query("SELECT COUNT(*) FROM lost_items")->fetchColumn();
-$totalFound= $pdo->query("SELECT COUNT(*) FROM found_items")->fetchColumn();
-$unreadMessages= $pdo->query("SELECT COUNT(*) FROM messages WHERE is_read = 0")->fetchColumn();
-$resolved= $pdo->query("SELECT (SELECT COUNT(*) FROM lost_items WHERE status='resolved') + (SELECT COUNT(*) FROM found_items WHERE status='resolved')")->fetchColumn();
+$section = $_GET['section'] ?? 'overview'; //get section from url (default overview)
+$totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn(); //pdo queries to count totals 
+$totalLost = $pdo->query("SELECT COUNT(*) FROM lost_items")->fetchColumn();
+$totalFound = $pdo->query("SELECT COUNT(*) FROM found_items")->fetchColumn();
+$unreadMessages = $pdo->query("SELECT COUNT(*) FROM messages WHERE is_read = 0")->fetchColumn();
+$resolved = $pdo->query("SELECT (SELECT COUNT(*) FROM lost_items WHERE status='resolved') + (SELECT COUNT(*) FROM found_items WHERE status='resolved')")->fetchColumn();
 
 $actionMsg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();
 
-    //Delete item
-    if (isset($_POST['delete_item'])) {
-        $delId = (int) $_POST['item_id'];
+    // Delete item
+    if (isset($_POST['delete_item'])) { //if delete button is clicked sumbited form
+        $delId = (int) $_POST['item_id']; //get item id and type from form
         $delType = $_POST['item_type'];
-        $table= $delType === 'found' ? 'found_items' : 'lost_items';
-        $stmt = $pdo->prepare("SELECT image_path FROM $table WHERE id = ?");
-        $stmt->execute([$delId]);
-        $row= $stmt->fetch();
-        if ($row && $row['image_path'] && file_exists($row['image_path'])) unlink($row['image_path']);
-//if img exists ddelet from server
-        $pdo->prepare("DELETE FROM $table WHERE id = ?")->execute([$delId]);
-        $actionMsg= 'Item deleted'; //execute query and show message
+        $table = $delType === 'found' ? 'found_items' : 'lost_items';  //to decide table
+        $stmt = $pdo->prepare("SELECT image_path FROM $table WHERE id = ?"); //fetch image path
+        $stmt->execute([$delId]);//delete image file if exists
+        $row = $stmt->fetch();
+        if ($row && $row['image_path'] && file_exists($row['image_path'])) unlink($row['image_path']);//unlink = delete file
+        $pdo->prepare("DELETE FROM $table WHERE id = ?")->execute([$delId]);//delete item form db
+        $actionMsg = 'Item deleted'; //msg
     }
 
     // Change item status
     if (isset($_POST['change_status'])) {
-        $delId = (int) $_POST['item_id'];
+        $delId = (int) $_POST['item_id']; //get info from form
         $delType = $_POST['item_type'];
         $newStatus = $_POST['new_status'];
-        $table= $delType === 'found' ? 'found_items' : 'lost_items';
-        $pdo->prepare("UPDATE $table SET status = ? WHERE id = ?")->execute([$newStatus, $delId]);
-        $actionMsg ='Status is updated';
+        $table = $delType === 'found' ? 'found_items' : 'lost_items';// decide table
+        $pdo->prepare("UPDATE $table SET status = ? WHERE id = ?")->execute([$newStatus, $delId]);//query to update 
+        $actionMsg = 'Status is updated'; 
     }
 
     // Delete message
     if (isset($_POST['delete_message'])) {
-        $pdo->prepare("DELETE FROM messages WHERE id = ?")->execute([(int)$_POST['msg_id']]);
-        $actionMsg = 'Message deleted';
+        $pdo->prepare("DELETE FROM messages WHERE id = ?")->execute([(int)$_POST['msg_id']]);//delete
+        $actionMsg = 'Message deleted'; //msg
     }
 
-    // Mark message read
+    // update message to read
     if (isset($_POST['mark_read'])) {
         $pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ?")->execute([(int)$_POST['msg_id']]);
         $actionMsg = 'Message marked read';
@@ -55,15 +54,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Change user role
     if (isset($_POST['set_role'])) {
-        $targetId= (int) $_POST['target_user_id'];
-        $newRole = $_POST['new_role'];
-        if ($targetId != $_SESSION['user_id']) {   // Can't change own role== security
+        $targetId = (int) $_POST['target_user_id'];
+        $newRole  = $_POST['new_role'];
+        if ($targetId != $_SESSION['user_id']) {
             $pdo->prepare("UPDATE users SET role = ? WHERE id = ?")->execute([$newRole, $targetId]);
             $actionMsg = 'User role updated';
         }
     }
 
-    //Delete user
+    // Delete user
     if (isset($_POST['delete_user'])) {
         $targetId = (int) $_POST['target_user_id'];
         if ($targetId != $_SESSION['user_id']) {
@@ -73,25 +72,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$items= [];
-$messages= [];
-$users = []; //array objs 
+//initilizw arrays
+$items = [];
+$messages = [];
+$users = [];
 
 if ($section === 'items') {
-    $typeFilter = $_GET['type_filter'] ?? 'all'; 
-    $statusFilter = $_GET['status_filter'] ?? 'all';
+    $typeFilter = $_GET['type_filter'] ?? 'all';//get from url
+    $statusFilter = $_GET['status_filter'] ?? 'all';//
 
-    //Get lost items
-    if ($typeFilter !== 'found') {
-        $sql = "SELECT l.*, u.name AS reporter, 'lost' AS item_type FROM lost_items l JOIN users u ON u.id = l.user_id WHERE 1=1";//show user as reporter
-        $params = [];
-        if ($statusFilter !== 'all') { $sql .= " AND l.status = ?"; $params[] = $statusFilter; }
-        $stmt = $pdo->prepare($sql. " ORDER BY l.created_at DESC");//order by date desc
+    if ($typeFilter !== 'found') {//if not found = lost
+        $sql = "SELECT l.*, u.name AS reporter, 'lost' AS item_type FROM lost_items l JOIN users u ON u.id = l.user_id WHERE 1=1";
+        //quiry to fetch all columns from lost items, Hardcodes 'lost' as a literal item_type column
+
+        $params = []; //for prepared statement parameters
+        if ($statusFilter !== 'all') { $sql .= " AND l.status = ?"; $params[] = $statusFilter; }//if filter is applied, add to query and params
+        $stmt = $pdo->prepare($sql . " ORDER BY l.created_at DESC"); //order query (by date)
         $stmt->execute($params);
-        $items = array_merge($items, $stmt->fetchAll());//merge lost and found items into one array 
+        $items = array_merge($items, $stmt->fetchAll());//merge results into items array
     }
-    //Get found items
-    if ($typeFilter !== 'lost') {
+    if ($typeFilter !== 'lost') { //for found
         $sql = "SELECT f.*, u.name AS reporter, 'found' AS item_type FROM found_items f JOIN users u ON u.id = f.user_id WHERE 1=1";
         $params = [];
         if ($statusFilter !== 'all') { $sql .= " AND f.status = ?"; $params[] = $statusFilter; }
@@ -99,10 +99,10 @@ if ($section === 'items') {
         $stmt->execute($params);
         $items = array_merge($items, $stmt->fetchAll());
     }
-    usort($items, fn($a, $b) => strcmp($b['created_at'], $a['created_at']));//sort by date
+    usort($items, fn($a, $b) => strcmp($b['created_at'], $a['created_at']));//final sort by date after merge
 }
 
-if ($section=== 'messages') {//get messages with item title
+if ($section === 'messages') {//if current section is message - from url
     $messages = $pdo->query(
         "SELECT m.*,
              CASE WHEN m.item_type='lost' THEN l.title ELSE f.title END AS item_title
@@ -110,16 +110,17 @@ if ($section=== 'messages') {//get messages with item title
          LEFT JOIN lost_items  l ON l.id = m.item_id AND m.item_type = 'lost'
          LEFT JOIN found_items f ON f.id = m.item_id AND m.item_type = 'found'
          ORDER BY m.created_at DESC"
-    )->fetchAll();
+    )->fetchAll(); //select all messages,if item lost title from lost items.. 
+    //join with table based on item type to get item title then order it
 }
 
-if ($section === 'users') {
+if ($section === 'users') {//fetch all users in section user
     $users = $pdo->query("SELECT * FROM users ORDER BY created_at DESC")->fetchAll();
 }
 
-//Recent items for overview
-$recentLost = $pdo->query("SELECT l.*, u.name AS reporter FROM lost_items  l JOIN users u ON u.id = l.user_id ORDER BY l.created_at DESC LIMIT 5")->fetchAll(); //limit 5 = only show 5 recent items
+$recentLost = $pdo->query("SELECT l.*, u.name AS reporter FROM lost_items  l JOIN users u ON u.id = l.user_id ORDER BY l.created_at DESC LIMIT 5")->fetchAll();
 $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JOIN users u ON u.id = f.user_id ORDER BY f.created_at DESC LIMIT 5")->fetchAll();
+//select most rwcwnt (5) items from each
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -137,16 +138,16 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
     <div class="admin-left-bar">
         <div class="admin-logo-box">🛡️ Admin Panel</div>
         <nav class="admin-menu">
-            <a href="admin.php?section=overview"  class="admin-menu-item <?php echo $section === 'overview'  ? 'active' : ''; ?>">📊 Overview</a>
-            <a href="admin.php?section=items"     class="admin-menu-item <?php echo $section === 'items'     ? 'active' : ''; ?>">📦 All Items</a>
-            <a href="admin.php?section=messages"  class="admin-menu-item <?php echo $section === 'messages'  ? 'active' : ''; ?>">
+            <a href="admin.php?section=overview" class="admin-menu-item <?php echo $section === 'overview' ? 'active' : ''; ?>">📊 Overview</a>
+            <a href="admin.php?section=items" class="admin-menu-item <?php echo $section === 'items' ? 'active' : ''; ?>">📦 All Items</a>
+            <a href="admin.php?section=messages" class="admin-menu-item <?php echo $section === 'messages' ? 'active' : ''; ?>"> <!-- php here checks which active -->
                 ✉️ Messages
-                <?php if ($unreadMessages > 0): ?>
+                <?php if ($unreadMessages > 0): ?> <!-- if unredd make it red -->
                     <span style="background:#ef4444;color:#fff;border-radius:99px;padding:1px 7px;font-size:11px;margin-left:4px"><?php echo $unreadMessages; ?></span>
-                <?php endif; ?> <!-- show unread messages count -->
+                <?php endif; ?>
             </a>
-            <a href="admin.php?section=users" class="admin-menu-item <?php echo $section === 'users'? 'active' : ''; ?>">👥 Users</a>
-            <a href="index.php" class="admin-menu-item">🏠 View Portal</a>
+            <a href="admin.php?section=users" class="admin-menu-item <?php echo $section === 'users' ? 'active' : ''; ?>">👥 Users</a>
+            <a href="index.php" class="admin-menu-item">🏠 View Portal</a> <!-- redirect-->
             <a href="logout.php" class="admin-menu-item">↩ Logout</a>
         </nav>
     </div>
@@ -154,24 +155,24 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
     <div class="admin-main-area">
 
         <div class="admin-top-strip">
-            <h1><?php echo ucfirst($section); ?></h1>
-            <span>👩‍💼 <?php echo e($_SESSION['user_name']); ?></span> <!-- fetch and show name-->
-        </div>
+            <h1><?php echo ucfirst($section); ?></h1> <!-- cpitalizes first letter of section-->
+            <span>👩‍💼 <?php echo e($_SESSION['user_name']); ?></span><!-- display username from session -->
+        </div> <!-- e() is a helper function runa htmlspecialchars to prevent xss -->
 
-        <?php if ($actionMsg): ?>
+        <?php if ($actionMsg): ?> <!--action message style -->
             <div class="info-box info-box-green" style="margin-bottom:16px">✅ <?php echo e($actionMsg); ?></div>
         <?php endif; ?>
 
-        <!--Overview -->
+        <!--Overview-->
         <?php if ($section === 'overview'): ?>
 
-            <div class="stat-cards-row">
+            <div class="stat-cards-row"> <!--show totals from count query up -->
                 <div class="stat-card"><div class="big-number"><?php echo $totalUsers; ?></div><div class="small-label">Users</div></div>
                 <div class="stat-card"><div class="big-number"><?php echo $totalLost; ?></div><div class="small-label">Lost Reports</div></div>
                 <div class="stat-card green"><div class="big-number"><?php echo $totalFound; ?></div><div class="small-label">Found Posts</div></div>
                 <div class="stat-card orange"><div class="big-number"><?php echo $resolved; ?></div><div class="small-label">Resolved</div></div>
-                <div class="stat-card <?php echo $unreadMessages > 0 ? 'red' : ''; ?>"><!-- red if there are unread messages -->
-                    <div class="big-number"><?php echo $unreadMessages; ?></div><!-- show count-->
+                <div class="stat-card <?php echo $unreadMessages > 0 ? 'red' : ''; ?>"><!-- if  any unread make it red -->
+                    <div class="big-number"><?php echo $unreadMessages; ?></div><!-- show number of unread -->
                     <div class="small-label">Unread Messages</div>
                 </div>
             </div>
@@ -179,21 +180,21 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
             <div class="two-col-grid">
                 <div class="white-box">
                     <h3>Recent Lost Reports</h3>
-                    <?php foreach ($recentLost as $item): ?> <!-- loop recent lost items in above arrAy -->
+                    <?php foreach ($recentLost as $item): ?> <!-- loop through recent lost items -->
                         <div class="my-item-row">
                             <div class="my-item-text">
                                 <div class="item-name"><?php echo e($item['title']); ?></div>
                                 <div class="item-sub"><?php echo e($item['reporter']); ?> · <?php echo e($item['location']); ?></div>
                             </div>
                             <span class="tag <?php echo $item['status'] === 'resolved' ? 'tag-resolved' : 'tag-lost'; ?>">
-                                <?php echo $item['status']; ?>
+                                <?php echo $item['status']; ?> <!-- show status with tag-->
                             </span>
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <div class="white-box">
+                <div class="white-box"><!--same-->
                     <h3>Recent Found Posts</h3>
-                    <?php foreach ($recentFound as $item): ?><!--for found-->
+                    <?php foreach ($recentFound as $item): ?>
                         <div class="my-item-row">
                             <div class="my-item-text">
                                 <div class="item-name"><?php echo e($item['title']); ?></div>
@@ -210,17 +211,16 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
         <!--All Items-->
         <?php elseif ($section === 'items'): ?>
 
-            <!--Filter -->
             <form method="GET" action="admin.php" style="display:flex;gap:8px;margin-bottom:16px">
                 <input type="hidden" name="section" value="items">
-                <select name="type_filter" onchange="this.form.submit()"> <!-- filter by type -->
-                    <option value="all"<?php if (($_GET['type_filter'] ?? 'all') === 'all') echo 'selected'; ?>>All Types</option>
+                <select name="type_filter" onchange="this.form.submit()"><!--submit on change -->
+                    <option value="all" <?php if (($_GET['type_filter'] ?? 'all') === 'all')  echo 'selected'; ?>>All Types</option> <!--get from url ,keep selected-->
                     <option value="lost" <?php if (($_GET['type_filter'] ?? '') === 'lost') echo 'selected'; ?>>Lost Only</option>
-                    <option value="found"<?php if (($_GET['type_filter'] ?? '') === 'found') echo 'selected'; ?>>Found Only</option>
+                    <option value="found" <?php if (($_GET['type_filter'] ?? '') === 'found') echo 'selected'; ?>>Found Only</option>
                 </select>
-                <select name="status_filter" onchange="this.form.submit()"><!--by status -->
+                <select name="status_filter" onchange="this.form.submit()">
                     <option value="all" <?php if (($_GET['status_filter'] ?? 'all') === 'all') echo 'selected'; ?>>All Statuses</option>
-                    <option value="active" <?php if (($_GET['status_filter'] ?? '') === 'active')echo 'selected'; ?>>Active</option>
+                    <option value="active" <?php if (($_GET['status_filter'] ?? '') === 'active') echo 'selected'; ?>>Active</option>
                     <option value="resolved" <?php if (($_GET['status_filter'] ?? '') === 'resolved') echo 'selected'; ?>>Resolved</option>
                 </select>
             </form>
@@ -238,19 +238,19 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($items)): ?>
-                        <tr><td colspan="7" style="text-align:center;color:#6b8ab0">No items found.</td></tr>
+                    <?php if (empty($items)): ?> <!--condition if no items-->
+                        <tr><td colspan="7" style="text-align:center;color:#6b8ab0">No items found</td></tr>
                     <?php else: ?>
-                        <?php foreach ($items as $i =>$item): ?> <!-- Loop through items and show in table -->
+                        <?php foreach ($items as $i => $item): ?><!-- loop through items-->
                             <tr>
-                                <td><?php echo $i + 1; ?></td>
+                                <td><?php echo $i + 1; ?></td> <!-- show index from 1- not 0-->
                                 <td><?php echo e($item['title']); ?></td>
                                 <td>
                                     <span class="tag <?php echo $item['item_type'] === 'lost' ? 'tag-lost' : 'tag-found'; ?>">
                                         <?php echo $item['item_type']; ?>
                                     </span>
                                 </td>
-                                <td><?php echo e($item['reporter']); ?></td> 
+                                <td><?php echo e($item['reporter']); ?></td>
                                 <td><?php echo e($item['location']); ?></td>
                                 <td>
                                     <span class="tag <?php echo $item['status'] === 'resolved' ? 'tag-resolved' : ''; ?>">
@@ -263,6 +263,8 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
 
                                     <!-- Change status form -->
                                     <form method="POST" action="admin.php?section=items" style="display:inline">
+                                        <?php csrfField(); ?> <!--When the form loads a random token is generated and stored in the session-->
+                                        <!-- this prevent CSRF attacks-->
                                         <input type="hidden" name="change_status" value="1">
                                         <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
                                         <input type="hidden" name="item_type" value="<?php echo $item['item_type']; ?>">
@@ -275,8 +277,9 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
                                     <!-- Delete form -->
                                     <form method="POST" action="admin.php?section=items" style="display:inline"
                                           onsubmit="return confirm('Delete this item?')">
+                                        <?php csrfField(); ?>
                                         <input type="hidden" name="delete_item" value="1">
-                                        <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                        <input type="hidden" name="item_id"   value="<?php echo $item['id']; ?>">
                                         <input type="hidden" name="item_type" value="<?php echo $item['item_type']; ?>">
                                         <button type="submit" class="btn btn-small btn-red">Delete</button>
                                     </form>
@@ -287,7 +290,7 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
                 </tbody>
             </table>
 
-        <!--Messages  -->
+        <!--Messages-->
         <?php elseif ($section === 'messages'): ?>
 
             <table class="data-table">
@@ -303,20 +306,22 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($messages)): ?>
+                    <?php if (empty($messages)): ?> 
                         <tr><td colspan="7" style="text-align:center;color:#6b8ab0">No messages.</td></tr>
                     <?php else: ?>
-                        <?php foreach ($messages as $i => $msg): ?> <!-- Loop messages -->
-                            <tr style="<?php echo !$msg['is_read'] ? 'font-weight:600' : ''; ?>">
-                                <td><?php echo $i + 1; ?></td>
-                                <td><?php echo e($msg['item_title'] ?? '—'); ?> (<?php echo $msg['item_type']; ?>)</td>
+                        <?php foreach ($messages as $i => $msg): ?> <!-- loop through messages-->
+                            <tr style="<?php echo !$msg['is_read'] ? 'font-weight:600' : ''; ?>"> <!-- if not read make it bold -->
+                                <td><?php echo $i + 1; ?></td> 
+                                <td><?php echo e($msg['item_title'] ?? '—'); ?> (<?php echo $msg['item_type']; ?>)</td> 
                                 <td><?php echo e($msg['sender_name']); ?></td>
                                 <td><?php echo e($msg['sender_email']); ?></td>
-                                <td><?php echo e(substr($msg['body'], 0, 60)). (strlen($msg['body']) > 60 ? '…' : ''); ?></td>
-                                <td><?php echo substr($msg['created_at'], 0, 10); ?></td>
+                                <td><?php echo e(substr($msg['body'], 0, 60)) . (strlen($msg['body']) > 60 ? '…' : ''); ?></td>
+                                <!-- substr help display only first 60 char of ms, and adds sots -->
+                                <td><?php echo substr($msg['created_at'], 0, 10); ?></td> <!-- dat no time -->
                                 <td>
-                                    <?php if (!$msg['is_read']): ?><!--mark read -->
+                                    <?php if (!$msg['is_read']): ?>
                                         <form method="POST" action="admin.php?section=messages" style="display:inline">
+                                            <?php csrfField(); ?>
                                             <input type="hidden" name="mark_read" value="1">
                                             <input type="hidden" name="msg_id" value="<?php echo $msg['id']; ?>">
                                             <button type="submit" class="btn btn-small btn-white">Mark Read</button>
@@ -324,6 +329,7 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
                                     <?php endif; ?>
                                     <form method="POST" action="admin.php?section=messages" style="display:inline"
                                           onsubmit="return confirm('Delete this message?')">
+                                        <?php csrfField(); ?>
                                         <input type="hidden" name="delete_message" value="1">
                                         <input type="hidden" name="msg_id" value="<?php echo $msg['id']; ?>">
                                         <button type="submit" class="btn btn-small btn-red">Delete</button>
@@ -335,9 +341,8 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
                 </tbody>
             </table>
 
-        <!-- Users -->
+        <!--Users-->
         <?php elseif ($section === 'users'): ?>
-
             <table class="data-table">
                 <thead>
                     <tr>
@@ -362,19 +367,21 @@ $recentFound = $pdo->query("SELECT f.*, u.name AS reporter FROM found_items f JO
                             </td>
                             <td><?php echo substr($user['created_at'], 0, 10); ?></td>
                             <td>
-                                <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                <?php if ($user['id'] != $_SESSION['user_id']): ?> <!-- prevent admin from changing their role/delete-->
                                     <!-- Toggle role -->
                                     <form method="POST" action="admin.php?section=users" style="display:inline">
+                                        <?php csrfField(); ?>
                                         <input type="hidden" name="set_role" value="1">
                                         <input type="hidden" name="target_user_id" value="<?php echo $user['id']; ?>">
                                         <input type="hidden" name="new_role" value="<?php echo $user['role'] === 'admin' ? 'student' : 'admin'; ?>">
                                         <button type="submit" class="btn btn-small btn-white">
-                                            <?php echo $user['role'] === 'admin' ? 'Make Student' : 'Make Admin'; ?>
+                                            <?php echo $user['role'] === 'admin' ? 'Make Student' : 'Make Admin'; ?> 
                                         </button>
                                     </form>
                                     <!-- Delete user -->
                                     <form method="POST" action="admin.php?section=users" style="display:inline"
                                           onsubmit="return confirm('Delete this user and all their data?')">
+                                        <?php csrfField(); ?>
                                         <input type="hidden" name="delete_user" value="1">
                                         <input type="hidden" name="target_user_id" value="<?php echo $user['id']; ?>">
                                         <button type="submit" class="btn btn-small btn-red">Delete</button>

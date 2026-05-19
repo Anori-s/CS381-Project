@@ -3,7 +3,7 @@ session_start();
 require_once '../includes/db.php';
 require_once '../includes/auth.php';
 
-// Already logged ==Go to dashboard
+// if logged in go to dashboard
 if (isLoggedIn()) {
     header('Location: dashboard.php');
     exit();
@@ -11,28 +11,29 @@ if (isLoggedIn()) {
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();//verify token
 
-    $email = trim($_POST['email']);
+    $email = trim($_POST['email']); //trim and clean inputs
     $password = $_POST['password'];
 
-    //Find user by email -- unique email 
+    // Find user by email
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
-    //Verify password
+    // Verify password
     if ($user && password_verify($password, $user['password'])) {
 
-        //Regenerate session ID to prevent session fixation
+        // Regenerate session ID to prevent session fixation
         session_regenerate_id(true);
 
         $_SESSION['logged_in'] = true;
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_name'] = $user['name'];
-        $_SESSION['user_email'] = $user['email'];
+        $_SESSION['user_id'] =$user['id'];
+        $_SESSION['user_name']= $user['name'];
+        $_SESSION['user_email']= $user['email'];
         $_SESSION['user_role'] = $user['role'];
 
-        // Redirect based on role
+        //Redirect based on role
         if ($user['role'] === 'admin') {
             header('Location: admin.php');
         } else {
@@ -61,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h2>Welcome back</h2>
         <p class="login-subtitle">Sign in to your YIC account</p>
 
-        <div class="demo-accounts">
+        <div class="demo-accounts"> <!-- more later -->
             📌 Student: <strong>4311085@rcjy.edu.sa</strong> / <strong>password</strong><br>
             🔑 Admin: <strong>admin@rcjy.edu.sa</strong> / <strong>password</strong>
         </div>
@@ -73,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" action="login.php">
+            <?php csrfField(); ?> 
             <div class="input-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email"

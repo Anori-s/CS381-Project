@@ -3,20 +3,21 @@ session_start();
 require_once '../includes/db.php';
 require_once '../includes/auth.php';
 
-requireLogin();   // Must be logged in to report
+requireLogin(); // Must be logged in to report
 
-$errors  = [];
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();
 
-    // Get and trim form data
-    $title= trim($_POST['title']);
+    // same as report_found
+    $title = trim($_POST['title']);
     $category = trim($_POST['category']);
     $location = trim($_POST['location']);
     $date_lost = trim($_POST['date_lost']);
     $description = trim($_POST['description']);
     $contact = trim($_POST['contact']);
-    $reward  = trim($_POST['reward']);
+    $reward = trim($_POST['reward']);
 
     // Validation
     if (empty($title)) $errors[] = 'Item name is required';
@@ -26,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (strlen($description) < 20) $errors[] = 'Description must be at least 20 characters';
     if (!filter_var($contact, FILTER_VALIDATE_EMAIL)) $errors[] = 'Please enter a valid email';
 
-    // Handle image upload
+    // image upload
     $image_path = '';
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $allowed = ['image/jpeg', 'image/png', 'image/webp'];
@@ -38,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($_FILES['image']['size'] > 5 * 1024 * 1024) {
             $errors[] = 'Image must be 5 MB or smaller.';
         } else {
-            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+            $ext= pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
             $filename = uniqid('img_') . '.' . $ext;
             $image_path = 'uploads/items/' . $filename;
             if (!is_dir('../uploads/items/')) {
@@ -104,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST" action="report_lost.php" enctype="multipart/form-data">
+        <?php csrfField(); ?>
 
         <div class="two-columns">
             <div class="input-group">
@@ -117,12 +119,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <select id="category" name="category" required>
                     <option value="">-- Select --</option>
                     <option value="electronics" <?php if (($_POST['category'] ?? '') === 'electronics') echo 'selected'; ?>>Electronics</option>
-                    <option value="bags"        <?php if (($_POST['category'] ?? '') === 'bags')        echo 'selected'; ?>>Bags and Luggage</option>
-                    <option value="clothing"    <?php if (($_POST['category'] ?? '') === 'clothing')    echo 'selected'; ?>>Clothing</option>
-                    <option value="keys"        <?php if (($_POST['category'] ?? '') === 'keys')        echo 'selected'; ?>>Keys</option>
+                    <option value="bags"<?php if (($_POST['category'] ?? '') === 'bags') echo 'selected'; ?>>Bags and Luggage</option>
+                    <option value="clothing"<?php if (($_POST['category'] ?? '') === 'clothing')echo 'selected'; ?>>Clothing</option>
+                    <option value="keys"<?php if (($_POST['category'] ?? '') === 'keys') echo 'selected'; ?>>Keys</option>
                     <option value="accessories" <?php if (($_POST['category'] ?? '') === 'accessories') echo 'selected'; ?>>Accessories</option>
-                    <option value="books"       <?php if (($_POST['category'] ?? '') === 'books')       echo 'selected'; ?>>Books and Stationery</option>
-                    <option value="other"       <?php if (($_POST['category'] ?? '') === 'other')       echo 'selected'; ?>>Other</option>
+                    <option value="books" <?php if (($_POST['category'] ?? '') === 'books') echo 'selected'; ?>>Books and Stationery</option>
+                    <option value="other" <?php if (($_POST['category'] ?? '') === 'other')echo 'selected'; ?>>Other</option>
                 </select>
             </div>
         </div>

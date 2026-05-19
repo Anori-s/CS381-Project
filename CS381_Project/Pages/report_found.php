@@ -8,9 +8,9 @@ requireLogin();
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $title = trim($_POST['title']);
-    $category = trim($_POST['category']);
+    verifyCsrf(); //verify token
+    $title = trim($_POST['title']); //trim and clean inputs from form
+    $category= trim($_POST['category']);
     $location = trim($_POST['location']);
     $date_found = trim($_POST['date_found']);
     $description = trim($_POST['description']);
@@ -19,9 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Validation
     if (empty($title)) $errors[] = 'Item name is required';
-    if (empty($category)) $errors[] = 'Category is required';
-    if (empty($location)) $errors[] = 'Location is required';
+    if (empty($category))$errors[] = 'Category is required';
+    if (empty($location))$errors[] = 'Location is required';
     if (empty($date_found)) $errors[] = 'Date is required';
+
     if (strlen($description) < 20) $errors[] = 'Description must be at least 20 characters';
     if (!filter_var($contact, FILTER_VALIDATE_EMAIL)) $errors[] = 'Please enter a valid email';
     if (empty($held_at)) $errors[] = 'Please select where the item is held';
@@ -29,26 +30,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Image upload
     $image_path = '';
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-        $allowed = ['image/jpeg', 'image/png', 'image/webp'];//only img types
-        $finfo = new finfo(FILEINFO_MIME_TYPE);// Get MIME type
-        $mime = $finfo->file($_FILES['image']['tmp_name']);// Validate 
+        // file is submitted, no error
+        $allowed = ['image/jpeg', 'image/png', 'image/webp']; //allowed types
+        $finfo = new finfo(FILEINFO_MIME_TYPE);//finfo obj to check mime type
+        $mime = $finfo->file($_FILES['image']['tmp_name']);//tmp location 
 
-        if (!in_array($mime, $allowed)) {// Invalid type
+        if (!in_array($mime, $allowed)) { //not allowed type
             $errors[] = 'Only JPG, PNG, or WEBP images are allowed.';
-        } elseif ($_FILES['image']['size'] > 5 * 1024 * 1024) {// Too large
+        } elseif ($_FILES['image']['size'] > 5 * 1024 * 1024) {//size limit 5MB
             $errors[] = 'Image must be 5 MB or smaller.';
         } else {
-            $ext  = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $filename = uniqid('img_') . '.' . $ext; //unique filename
-            $image_path = 'uploads/items/' . $filename;
-            if (!is_dir('../uploads/items/')) {
+            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION); //get path from name
+            $filename = uniqid('img_') . '.' . $ext; //generate unique name
+            $image_path = 'uploads/items/' . $filename; //relative path to save in db
+            if (!is_dir('../uploads/items/')) { //if dir doesnt exist create
                 mkdir('../uploads/items/', 0755, true);
             }
             move_uploaded_file($_FILES['image']['tmp_name'], '../uploads/items/' . $filename);
+            //move from temp to our folder
         }
     }
 
-    if (empty($errors)) { //no errors, insert into db
+    if (empty($errors)) {//no errors, insert into 
         $stmt = $pdo->prepare("INSERT INTO found_items (user_id, title, category, location, date_found, description, contact, held_at, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $_SESSION['user_id'],
@@ -99,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p class="form-note">Describe what you found so the owner can identify it.</p>
 
     <?php if (!empty($errors)): ?>
-        <div class="error-box"> <!-- Show errors -->
+        <div class="error-box">
             <?php foreach ($errors as $err): ?>
                 <p>⚠️ <?php echo e($err); ?></p>
             <?php endforeach; ?>
@@ -107,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST" action="report_found.php" enctype="multipart/form-data">
+        <?php csrfField(); ?>
 
         <div class="two-columns">
             <div class="input-group">
@@ -121,11 +125,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <option value="">-- Select --</option>
                     <option value="electronics" <?php if (($_POST['category'] ?? '') === 'electronics') echo 'selected'; ?>>Electronics</option>
                     <option value="bags"<?php if (($_POST['category'] ?? '') === 'bags') echo 'selected'; ?>>Bags and Luggage</option>
-                    <option value="clothing"<?php if (($_POST['category'] ?? '') === 'clothing') echo 'selected'; ?>>Clothing</option>
-                    <option value="keys" <?php if (($_POST['category'] ?? '') === 'keys') echo 'selected'; ?>>Keys</option>
+                    <option value="clothing" <?php if (($_POST['category'] ?? '') === 'clothing') echo 'selected'; ?>>Clothing</option>
+                    <option value="keys"<?php if (($_POST['category'] ?? '') === 'keys') echo 'selected'; ?>>Keys</option>
                     <option value="accessories" <?php if (($_POST['category'] ?? '') === 'accessories') echo 'selected'; ?>>Accessories</option>
-                    <option value="books" <?php if (($_POST['category'] ?? '') === 'books') echo 'selected'; ?>>Books and Stationery</option>
-                    <option value="other"  <?php if (($_POST['category'] ?? '') === 'other') echo 'selected'; ?>>Other</option>
+                    <option value="books"<?php if (($_POST['category'] ?? '') === 'books') echo 'selected'; ?>>Books and Stationery</option>
+                    <option value="other" <?php if (($_POST['category'] ?? '') === 'other')echo 'selected'; ?>>Other</option>
                 </select>
             </div>
         </div>
@@ -161,10 +165,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label for="held_at">Item is currently held at *</label>
             <select id="held_at" name="held_at" required>
                 <option value="">-- Select --</option>
-                <option value="self" <?php if (($_POST['held_at'] ?? '') === 'self') echo 'selected'; ?>>With me (the finder)</option>
+                <option value="self" <?php if (($_POST['held_at'] ?? '') === 'self')     echo 'selected'; ?>>With me (the finder)</option>
                 <option value="security" <?php if (($_POST['held_at'] ?? '') === 'security') echo 'selected'; ?>>Security Office</option>
-                <option value="dept" <?php if (($_POST['held_at'] ?? '') === 'dept') echo 'selected'; ?>>Department Office</option>
-                <option value="other" <?php if (($_POST['held_at'] ?? '') === 'other') echo 'selected'; ?>>Other</option>
+                <option value="dept" <?php if (($_POST['held_at'] ?? '') === 'dept')     echo 'selected'; ?>>Department Office</option>
+                <option value="other" <?php if (($_POST['held_at'] ?? '') === 'other')    echo 'selected'; ?>>Other</option>
             </select>
         </div>
 

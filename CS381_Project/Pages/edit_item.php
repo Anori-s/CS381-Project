@@ -5,58 +5,57 @@ require_once '../includes/auth.php';
 
 requireLogin();
 
-$id = filter_var($_GET['id']  ?? 0, FILTER_VALIDATE_INT);
+$id  = filter_var($_GET['id'] ?? 0, FILTER_VALIDATE_INT);
 $type = $_GET['type'] ?? 'lost';
 
-//Fetch  item
+// Fetch item
 $table = $type === 'found' ? 'found_items' : 'lost_items';
-$stmt = $pdo->prepare("SELECT * FROM $table WHERE id = ?");
+$stmt  = $pdo->prepare("SELECT * FROM $table WHERE id = ?");
 $stmt->execute([$id]);
-$item = $stmt->fetch();
+$item  = $stmt->fetch();
 
-if (!$item) { // Item not found
+//no item = go to dashboard
+if (!$item) {
     header('Location: dashboard.php');
     exit();
 }
 
-// Only the owner+admin can edit
+// Only owner or admin can edit else dash
 if ($item['user_id'] != $_SESSION['user_id'] && !isAdmin()) {
     header('Location: dashboard.php');
-    exit(); // Unauthorized access
+    exit();
 }
 
 $errors = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') { //form sub
+    verifyCsrf(); //verify token
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $title= trim($_POST['title']);
+    $title = trim($_POST['title']); //trim and clean inputs
     $category = trim($_POST['category']);
-    $location= trim($_POST['location']);
+    $location = trim($_POST['location']);
     $description = trim($_POST['description']);
-    $contact= trim($_POST['contact']);
+    $contact = trim($_POST['contact']);
     $status = trim($_POST['status']);
-// Validation
+
+    // Validation
     if (empty($title)) $errors[] = 'Item name is required.';
     if (empty($category)) $errors[] = 'Category is required.';
     if (empty($location)) $errors[] = 'Location is required.';
     if (strlen($description) < 20) $errors[] = 'Description must be at least 20 characters.';
     if (!filter_var($contact, FILTER_VALIDATE_EMAIL)) $errors[] = 'Valid contact email required.';
-//no error==update
-    if (empty($errors)) {
+
+    if (empty($errors)) {// no errors, update db
         if ($type === 'found') {
             $stmt = $pdo->prepare("UPDATE found_items SET title=?, category=?, location=?, description=?, contact=?, status=? WHERE id=?");
             $stmt->execute([$title, $category, $location, $description, $contact, $status, $id]);
         } else {
             $reward = trim($_POST['reward']);
-            $stmt = $pdo->prepare("UPDATE lost_items SET title=?, category=?, location=?, description=?, contact=?, reward=?, status=? WHERE id=?");
+            $stmt   = $pdo->prepare("UPDATE lost_items SET title=?, category=?, location=?, description=?, contact=?, reward=?, status=? WHERE id=?");
             $stmt->execute([$title, $category, $location, $description, $contact, $reward, $status, $id]);
         }
 
-        // Check rowCount to confirm update 
-        if ($stmt->rowCount() >= 0) {
-            header('Location: dashboard.php?section=' . ($type === 'lost' ? 'my-lost' : 'my-found'));
-            exit();
-        }
+        header('Location: dashboard.php?section=' . ($type === 'lost' ? 'my-lost' : 'my-found'));
+        exit();
     }
 }
 ?>
@@ -99,7 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST" action="edit_item.php?id=<?php echo $id; ?>&type=<?php echo $type; ?>">
-<!-- form update, valus prefilled accessability-->
+        <?php csrfField(); ?>
+
         <div class="input-group">
             <label for="title">Item Name *</label>
             <input type="text" id="title" name="title"
@@ -111,10 +111,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="category">Category *</label>
                 <select id="category" name="category" required>
                     <?php
-                        $cats = ['electronics','bags','clothing','keys','accessories','books','other'];
-                        $current = $_POST['category'] ?? $item['category'];
-                        foreach ($cats as $cat):// Loop categories to show options
-                        $sel = $current === $cat ? 'selected' : '';
+                        $cats = ['electronics','bags','clothing','keys','accessories','books','other'];//categories
+                        $current = $_POST['category'] ?? $item['category'];//current value for selection
+                        foreach ($cats as $cat): //loop cats
+                            $sel = $current === $cat ? 'selected' : ''; 
                     ?>
                         <option value="<?php echo $cat; ?>" <?php echo $sel; ?>><?php echo ucfirst($cat); ?></option>
                     <?php endforeach; ?>
@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="status">Status</label>
                 <select id="status" name="status">
                     <?php
-                        $statuses = ['active','resolved','pending'];
+                        $statuses  = ['active','resolved','pending'];
                         $currentSt = $_POST['status'] ?? $item['status'];
                         foreach ($statuses as $st):
                             $sel = $currentSt === $st ? 'selected' : '';
@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    value="<?php echo e($_POST['contact'] ?? $item['contact']); ?>" required>
         </div>
 
-        <?php if ($type === 'lost'): ?><!-- Reward only for lost -->
+        <?php if ($type === 'lost'): ?>
         <div class="input-group">
             <label for="reward">Reward (optional)</label>
             <input type="text" id="reward" name="reward"

@@ -1,12 +1,12 @@
 <?php
 session_start();
-// clean-empty session data
+//empty session data
 $_SESSION = [];
 // Delete cookie
 if (isset($_COOKIE[session_name()])) {
-    setcookie(session_name(), '', time() - 3600, '/');
+    setcookie(session_name(), '', time() - 3600, '/'); //set time to 1 hour ago to delete
 }
-session_destroy();
+session_destroy(); //destroy for server
 
 // Redirect to login
 header('Location: login.php');

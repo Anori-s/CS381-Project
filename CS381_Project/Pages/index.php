@@ -33,7 +33,7 @@ $foundParams = [];
 
 if ($search !== '') { 
     $foundSql .= " AND (f.title LIKE ? OR f.location LIKE ?)";
-    $foundParams[] = "%$search%";
+    $foundParams[] = "%$search%";//if contains a word, add to param
     $foundParams[] = "%$search%";
 }
 if ($category !== '') {
@@ -43,7 +43,7 @@ if ($category !== '') {
 $foundSql .= " ORDER BY f.created_at DESC";
 
 $stmt = $pdo->prepare($foundSql);
-$stmt->execute($foundParams);
+$stmt->execute($foundParams);//
 $foundItems = $stmt->fetchAll();
 
 //Counters
@@ -57,7 +57,7 @@ function categoryIcon($cat) {
         'electronics' => '🔌', 'bags' => '🎒', 'clothing' => '👕',
         'keys' => '🔑', 'accessories' => '⌚', 'books' => '📚', 'other' => '📦'
     ];
-    return $icons[$cat] ?? '📦';
+    return $icons[$cat] ?? '📦';//default
 }
 ?>
 <!DOCTYPE html>
@@ -84,13 +84,13 @@ function categoryIcon($cat) {
             <li><a href="index.php" class="active">Home</a></li>
             <li><a href="report_lost.php">Report Lost</a></li>
             <li><a href="report_found.php">Post Found</a></li>
-            <?php if (isLoggedIn()): ?>
+            <?php if (isLoggedIn()): ?><!-- Show dashboard link if logged in -->
                 <li><a href="dashboard.php">My Account</a></li>
             <?php endif; ?>
         </ul>
     </nav>
     <div class="top-bar-right">
-        <?php if (isLoggedIn()): ?>
+        <?php if (isLoggedIn()): ?><!-- Show user badge and logout if logged in -->
             <span class="user-name-badge">👤 <?php echo e($_SESSION['user_name']); ?></span>
             <a href="logout.php" class="btn btn-white btn-small">Logout</a>
         <?php else: ?>
@@ -176,7 +176,7 @@ function categoryIcon($cat) {
                 <div class="item-card" onclick="location.href='item_detail.php?id=<?php echo $item['id']; ?>&type=lost'">
                     <div class="card-image">
                         <?php if ($item['image_path']): ?>
-<img src="<?php echo e('../' . $item['image_path']); ?>" alt="<?php echo e($item['title']); ?>"> <!-- img for item -->
+                            <img src="<?php echo e('../' . $item['image_path']); ?>" alt="<?php echo e($item['title']); ?>"> <!-- img for item -->
                         <?php else: ?>
                             <span style="font-size:42px"><?php echo categoryIcon($item['category']); ?></span><!-- icon if no img exist-->
                         <?php endif; ?>

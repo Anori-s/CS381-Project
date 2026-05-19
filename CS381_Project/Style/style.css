@@ -121,7 +121,6 @@ z-index: 100;
     font-size: 14px;
 }
 
-/* ── TABS ── */
 .tab-row { display:flex; justify-content: center; gap: 8px; padding: 18px 20px 0; }
 .tab-btn {
     padding: 9px 24px;
@@ -611,7 +610,7 @@ footer {
 
 .page-trail{ font-size: 13px; color: #6b8ab0; padding: 12px 20px 0; max-width: 880px; margin: 0 auto; }
 .page-trail a { color: #3b82f6; }
-
+/*responsive*/
 @media (max-width: 860px) {
     .detail-page, .dashboard-page { grid-template-columns: 1fr; }
     .dash-left-panel{ position: static; }
